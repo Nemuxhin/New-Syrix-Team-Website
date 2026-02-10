@@ -1,4 +1,15 @@
-﻿// --- CONFIGURATION ---
+﻿/**
+ * SYRIX COMMAND CENTER - LOGIC ENGINE v2.0
+ * * 1. CONFIGURATION & STATE
+ * 2. AUTHENTICATION & ROUTING
+ * 3. LANDING PAGE RENDERER
+ * 4. DASHBOARD MODULES
+ * 5. STRATBOOK ENGINE
+ * 6. MATCH & WAR ROOM LOGIC
+ * 7. ADMIN & UTILS
+ */
+
+// --- 1. CONFIGURATION & STATE ---
 const firebaseConfig = {
     apiKey: "AIzaSyAcZy0oY6fmwJ4Lg9Ac-Bq__eMukMC_u0w",
     authDomain: "syrix-team-schedule.firebaseapp.com",
@@ -8,457 +19,588 @@ const firebaseConfig = {
     appId: "1:571804588891:web:c3c17a4859b6b4f057187e"
 };
 
-const ADMIN_UIDS = ["M9FzRywhRIdUveh5JKUfQgJtlIB3", "SiPLxB20VzVGBZL3rTM42FsgEy52", "pmXgTX5dxbVns0nnO54kl1BR07A3"];
-const MAPS = ["Ascent", "Bind", "Haven", "Lotus", "Pearl", "Split", "Sunset", "Abyss"];
+const CONSTANTS = {
+    ADMIN_UIDS: ["M9FzRywhRIdUveh5JKUfQgJtlIB3", "SiPLxB20VzVGBZL3rTM42FsgEy52", "pmXgTX5dxbVns0nnO54kl1BR07A3"],
+    MAPS: ["Ascent", "Bind", "Haven", "Lotus", "Pearl", "Split", "Sunset", "Abyss"],
+    WEBHOOK: "https://discord.com/api/webhooks/1427426922228351042/lqw36ZxOPEnC3qK45b3vnqZvbkaYhzIxqb-uS1tex6CGOvmLYs19OwKZvslOVABdpHnD"
+};
 
-let db, auth, currentUser;
-let canvas, ctx, tool = 'draw', activeAgent = null, isDrawing = false;
-let currentEnemyId = null, currentRosterId = null;
-let currentCompSlot = null; // For editing comps
-let tempLineupX = 0, tempLineupY = 0, currentLineupId = null;
+// Global State Store
+const store = {
+    user: null,
+    isMember: false,
+    isAdmin: false,
+    currentTab: 'dashboard',
+    stratbook: {
+        tool: 'draw',
+        activeAgent: null,
+        isDrawing: false,
+        color: '#ff1e3c'
+    },
+    warRoom: {
+        activeTarget: null
+    },
+    compEditor: {
+        activeSlot: null
+    }
+};
 
-// --- INITIALIZATION ---
+let db, auth;
+let canvas, ctx;
+
+// --- 2. INITIALIZATION & ROUTING ---
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Init Firebase
     if (typeof firebase !== 'undefined') {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        auth = firebase.auth();
-
-        auth.onAuthStateChanged(user => {
-            currentUser = user;
-            if (document.body.id === 'page-hub') handleHubAuth(user);
-        });
-
-        if (document.body.id === 'page-home') loadLandingData();
-        if (document.body.id === 'page-hub') {
-            initStratbook();
-            initAgentPickers(); // For Comps tab
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            console.log("System: Firebase Initialized");
+        } catch (e) {
+            console.error("System: Firebase Error", e);
         }
+
+        // 2. Auth Listener
+        auth.onAuthStateChanged(user => {
+            store.user = user;
+            if (document.body.id === 'page-hub') {
+                handleHubAuth(user);
+            }
+        });
+    }
+
+    // 3. Page Specific Logic
+    const page = document.body.id;
+    if (page === 'page-home') {
+        initLandingPage();
+    } else if (page === 'page-hub') {
+        initStratbook();
+        // Check URL hash for direct linking
+        const hash = window.location.hash.substring(1);
+        if (hash) window.router(hash);
     }
 });
 
-// --- HELPER: FETCH AGENTS ---
-async function getAgents() {
-    const res = await fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true');
-    const json = await res.json();
-    return json.data;
-}
+// --- 3. LANDING PAGE RENDERER ---
+function initLandingPage() {
+    console.log("System: Loading Landing Page Data...");
 
-function initAgentPickers() {
-    getAgents().then(agents => {
-        // Stratbook Palette
-        document.getElementById('agent-palette').innerHTML = agents.map(a =>
-            `<img src="${a.displayIcon}" onclick="activeAgent='${a.displayIcon}'; tool='agent'" style="width:100%; cursor:pointer; border:1px solid #333;">`
-        ).join('');
-
-        // Comp Picker Palette
-        document.getElementById('comp-agent-list').innerHTML = agents.map(a =>
-            `<img src="${a.displayIcon}" onclick="window.selectCompAgent('${a.displayIcon}')" style="width:100%; cursor:pointer; border:1px solid #333;">`
-        ).join('');
+    // Scroll Effects
+    window.addEventListener('scroll', () => {
+        const nav = document.querySelector('nav');
+        if (window.scrollY > 50) nav.style.background = "#000";
+        else nav.style.background = "linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)";
     });
-}
 
-// --- LANDING PAGE ---
-function loadLandingData() {
+    // Fetch Matches
     db.collection("events").orderBy("date").onSnapshot(snap => {
-        const div = document.getElementById('landing-matches');
-        if (div) {
-            div.innerHTML = "";
-            let wins = 0, total = 0;
-            snap.forEach(doc => {
-                const m = doc.data();
-                if (m.result) {
-                    total++;
-                    if (parseInt(m.result.us) > parseInt(m.result.them)) wins++;
-                } else if (m.date >= new Date().toISOString().split('T')[0]) {
-                    div.innerHTML += `
-                        <div class="newsCard">
-                            <small style="color:var(--red); font-weight:900;">${m.date}</small>
-                            <h3 style="margin: 10px 0;">VS ${m.opponent}</h3>
-                            <p style="font-size:0.8rem; color:#888;">${m.map || 'TBD'}</p>
-                        </div>`;
-                }
-            });
-            // Update Stats Bar
-            if (document.getElementById('stat-record')) document.getElementById('stat-record').innerText = `${wins}W - ${total - wins}L`;
-            if (document.getElementById('stat-winrate')) document.getElementById('stat-winrate').innerText = total > 0 ? Math.round((wins / total) * 100) + "%" : "--%";
-        }
+        const container = document.getElementById('landing-matches-grid');
+        if (!container) return;
+
+        container.innerHTML = "";
+        const now = new Date().toISOString().split('T')[0];
+        let wins = 0, total = 0;
+
+        snap.forEach(doc => {
+            const data = doc.data();
+
+            // Calculate Win Rate
+            if (data.result) {
+                total++;
+                if (parseInt(data.result.us) > parseInt(data.result.them)) wins++;
+            }
+
+            // Render Upcoming
+            if (data.date >= now && !data.result) {
+                container.innerHTML += `
+                    <div class="newsCard">
+                        <span class="match-date">${data.date} // ${data.time || 'TBD'}</span>
+                        <div class="match-versus">VS ${data.opponent}</div>
+                        <div class="match-meta">${data.map || 'VETO PENDING'} • ${data.type || 'Official'}</div>
+                    </div>
+                `;
+            }
+        });
+
+        // Update Stat Bar
+        const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
+        document.getElementById('stat-record').innerText = `${wins}W - ${total - wins}L`;
+        document.getElementById('stat-winrate').innerText = `${wr}%`;
     });
 
+    // Fetch Roster
     db.collection("roster").onSnapshot(snap => {
-        const div = document.getElementById('landing-roster');
-        if (div) {
-            div.innerHTML = "";
-            document.getElementById('stat-roster').innerText = snap.size;
-            snap.forEach(doc => {
-                const p = doc.data();
-                div.innerHTML += `
-                    <div class="roster-card">
-                        <img src="${p.pfp || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde'}">
-                        <div class="roster-info">
-                            <h3>${doc.id}</h3>
-                            <span>${p.role}</span>
-                        </div>
-                    </div>`;
-            });
-        }
+        const grid = document.getElementById('landing-roster-grid');
+        if (!grid) return;
+
+        grid.innerHTML = "";
+        document.getElementById('stat-roster').innerText = snap.size;
+
+        snap.forEach(doc => {
+            const p = doc.data();
+            // Default image if missing
+            const img = p.pfp || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80';
+
+            grid.innerHTML += `
+                <div class="roster-card">
+                    <img src="${img}" alt="${doc.id}">
+                    <div class="roster-info">
+                        <h3>${doc.id}</h3>
+                        <span>${p.role}</span>
+                    </div>
+                </div>
+            `;
+        });
     });
 }
 
-// --- HUB AUTH & NAV ---
+// --- 4. HUB AUTHENTICATION ---
 function handleHubAuth(user) {
-    const lock = document.getElementById('hubLocked');
-    const unlock = document.getElementById('hubUnlocked');
-    const form = document.getElementById('app-form');
-    const msg = document.getElementById('auth-status-text');
-    const btns = document.getElementById('login-btns');
+    const screens = {
+        locked: document.getElementById('hubLocked'),
+        unlocked: document.getElementById('hubUnlocked'),
+        appForm: document.getElementById('application-module'),
+        login: document.getElementById('login-module')
+    };
 
     if (!user) {
-        lock.style.display = 'flex';
-        unlock.style.display = 'none';
+        screens.locked.style.display = 'flex';
+        screens.unlocked.style.display = 'none';
         return;
     }
 
+    // Check Permissions
     db.collection("roster").where("uid", "==", user.uid).get().then(snap => {
-        if (!snap.empty || ADMIN_UIDS.includes(user.uid)) {
-            lock.style.display = 'none';
-            unlock.style.display = 'flex';
-            document.getElementById('userProfile').innerText = user.displayName;
-            if (ADMIN_UIDS.includes(user.uid)) document.querySelector('.admin-only').style.display = 'inline-block';
+        const isAdmin = CONSTANTS.ADMIN_UIDS.includes(user.uid);
+        const isRoster = !snap.empty;
 
-            // Load ALL Modules
-            loadCaptainMsg();
-            loadAbsences();
-            loadDashboardEvents();
-            loadMapVeto();
-            loadEnemies();
-            loadHubMatches();
-            loadRosterList();
-            loadComp(); // Initial Load
-            changeLineupMap(); // Initial Load
-            if (ADMIN_UIDS.includes(user.uid)) loadApps();
+        if (isRoster || isAdmin) {
+            // AUTHORIZED
+            store.isMember = true;
+            store.isAdmin = isAdmin;
+
+            screens.locked.style.display = 'none';
+            screens.unlocked.style.display = 'flex';
+
+            document.getElementById('user-name').innerText = user.displayName.toUpperCase();
+            if (isAdmin) {
+                document.getElementById('nav-admin').style.display = 'inline-block';
+                document.getElementById('user-role-badge').innerText = "ADMINISTRATOR";
+                document.getElementById('user-role-badge').style.color = "#fff";
+                document.getElementById('user-role-badge').style.background = "red";
+            }
+
+            // Load Initial Data
+            loadDashboard();
         } else {
-            msg.innerText = `WELCOME ${user.displayName.toUpperCase()}. NOT ENLISTED.`;
-            if (btns) btns.style.display = 'none';
-            form.style.display = 'block';
+            // UNAUTHORIZED -> Show Application
+            screens.login.style.display = 'none';
+            screens.appForm.style.display = 'block';
         }
     });
 }
 
-window.loginWithDiscord = () => auth.signInWithPopup(new firebase.auth.OAuthProvider('oidc.discord'));
+// Auth Actions
+window.loginDiscord = () => {
+    const provider = new firebase.auth.OAuthProvider('oidc.discord');
+    auth.signInWithPopup(provider).catch(e => alert("Login Failed: " + e.message));
+};
 
-window.submitApplication = () => {
-    const ign = document.getElementById('app-ign').value;
-    const why = document.getElementById('app-why').value;
-    if (!ign || !why) return alert("Fill all fields");
-
-    db.collection("applications").add({
-        user: ign, uid: currentUser.uid,
+window.submitApp = () => {
+    const form = {
+        ign: document.getElementById('app-ign').value,
         rank: document.getElementById('app-rank').value,
         role: document.getElementById('app-role').value,
         tracker: document.getElementById('app-tracker').value,
-        why: why, submittedAt: new Date().toISOString()
+        why: document.getElementById('app-why').value
+    };
+
+    if (!form.ign || !form.why) return alert("Critical information missing.");
+
+    db.collection("applications").add({
+        ...form,
+        uid: store.user.uid,
+        discordTag: store.user.displayName,
+        submittedAt: new Date().toISOString()
     }).then(() => {
-        // Discord Webhook Logic
-        const webhookURL = "https://discord.com/api/webhooks/1427426922228351042/lqw36ZxOPEnC3qK45b3vnqZvbkaYhzIxqb-uS1tex6CGOvmLYs19OwKZvslOVABdpHnD";
-        fetch(webhookURL, {
+        // Send Webhook
+        fetch(CONSTANTS.WEBHOOK, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                username: "Syrix Bot",
                 embeds: [{
-                    title: `New App: ${ign}`, color: 16776960,
-                    fields: [{ name: 'Rank', value: document.getElementById('app-rank').value }, { name: 'Role', value: document.getElementById('app-role').value }]
+                    title: "New Application Recieved",
+                    color: 16711680,
+                    fields: [
+                        { name: "User", value: form.ign, inline: true },
+                        { name: "Rank", value: form.rank, inline: true },
+                        { name: "Tracker", value: form.tracker }
+                    ]
                 }]
             })
         });
-        alert("Application Submitted");
+        alert("Dossier Transmitted. Stand by for review.");
     });
 };
 
-window.setTab = (id, btn) => {
-    document.querySelectorAll('.tabView').forEach(e => e.classList.remove('active'));
-    document.querySelectorAll('.nav-pill').forEach(e => e.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    btn.classList.add('active');
+// --- 5. DASHBOARD ROUTER & LOGIC ---
+window.router = (viewId) => {
+    // 1. Update State
+    store.currentTab = viewId;
+    window.location.hash = viewId;
 
-    if (id === 'stratbook' && canvas) { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
-};
+    // 2. UI Update
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-window.showTab = window.setTab; // Alias
+    document.getElementById(`view-${viewId}`).classList.add('active');
 
-// --- MODULE: COMPS ---
-window.loadComp = () => {
-    const map = document.getElementById('comp-map').value;
-    db.collection("comps").doc(map).get().then(doc => {
-        const agents = doc.exists ? doc.data().agents : [null, null, null, null, null];
-        // Update Edit Slots
-        for (let i = 0; i < 5; i++) {
-            const slot = document.getElementById(`comp-slot-${i}`);
-            slot.innerHTML = agents[i] ? `<img src="${agents[i]}" style="width:100%; height:100%; object-fit:cover;">` : '?';
-            slot.dataset.img = agents[i] || "";
-        }
-        // Update Display Area
-        const disp = document.getElementById('comp-display');
-        disp.innerHTML = agents.map(a => a ? `<img src="${a}" style="width:50px; height:50px; border-radius:50%; border:2px solid #333;">` : '').join('');
+    // Find button to highlight (simple approach)
+    const btns = document.querySelectorAll('.nav-item');
+    btns.forEach(btn => {
+        if (btn.innerText.toLowerCase().includes(viewId.substring(0, 4))) btn.classList.add('active');
     });
+
+    // 3. Load Data for View
+    if (viewId === 'dashboard') loadDashboard();
+    if (viewId === 'matches') loadMatches();
+    if (viewId === 'warroom') loadWarRoom();
+    if (viewId === 'stratbook') resizeCanvas();
+    if (viewId === 'roster') loadRosterMgr();
+    if (viewId === 'mapveto') loadMapVeto();
+    if (viewId === 'admin') loadAdmin();
 };
 
-window.editCompSlot = (idx) => {
-    currentCompSlot = idx;
-    document.getElementById('comp-picker').style.display = 'block';
-};
-
-window.selectCompAgent = (url) => {
-    if (currentCompSlot === null) return;
-    const slot = document.getElementById(`comp-slot-${currentCompSlot}`);
-    slot.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
-    slot.dataset.img = url;
-    document.getElementById('comp-picker').style.display = 'none';
-};
-
-window.saveComp = () => {
-    const map = document.getElementById('comp-map').value;
-    const agents = [];
-    for (let i = 0; i < 5; i++) {
-        agents.push(document.getElementById(`comp-slot-${i}`).dataset.img || null);
-    }
-    db.collection("comps").doc(map).set({ agents }).then(() => {
-        alert("Comp Saved");
-        window.loadComp(); // Refresh display
+function loadDashboard() {
+    // Captain's Message
+    db.collection("general").doc("captain_message").onSnapshot(doc => {
+        if (doc.exists) document.getElementById('dashboard-msg').innerText = `"${doc.data().text}"`;
     });
-};
 
-// --- MODULE: LINEUPS ---
-window.changeLineupMap = () => {
-    const map = document.getElementById('luMapSelect').value;
-    const img = document.getElementById('luMapImg');
-    // Simple URL logic - ensure you have these maps hosted or use API
-    img.src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`; // Fallback image for demo
-    // Ideally use real map IDs
-
-    // Load Pins
-    db.collection("lineups").where("map", "==", map).onSnapshot(snap => {
-        const container = document.getElementById('lineup-pins');
-        container.innerHTML = "";
+    // Absences
+    db.collection("leaves").where("end", ">=", new Date().toISOString().split('T')[0]).onSnapshot(snap => {
+        const list = document.getElementById('dashboard-absences');
+        list.innerHTML = "";
         snap.forEach(doc => {
             const l = doc.data();
-            const pin = document.createElement('div');
-            pin.style = `position:absolute; left:${l.x}%; top:${l.y}%; width:15px; height:15px; background:red; border-radius:50%; border:2px solid white; cursor:pointer; transform:translate(-50%,-50%);`;
-            pin.onclick = (e) => { e.stopPropagation(); window.viewLineup(doc.id, l); };
-            container.appendChild(pin);
+            list.innerHTML += `<div class="list-item-mini"><span>${l.user}</span> <span class="text-red">${l.start}</span></div>`;
         });
     });
-};
 
-window.mapClickLineup = (e) => {
-    const rect = document.getElementById('lineup-map-container').getBoundingClientRect();
-    tempLineupX = ((e.clientX - rect.left) / rect.width) * 100;
-    tempLineupY = ((e.clientY - rect.top) / rect.height) * 100;
+    // Upcoming Events
+    const today = new Date().toISOString().split('T')[0];
+    db.collection("events").where("date", ">=", today).orderBy("date").limit(5).onSnapshot(snap => {
+        const list = document.getElementById('dashboard-events');
+        list.innerHTML = "";
+        document.getElementById('ops-count').innerText = `${snap.size} ACTIVE`;
 
-    // Reset form
-    document.getElementById('lu-title').value = "";
-    document.getElementById('lu-url').value = "";
-    document.getElementById('lu-desc').value = "";
+        if (snap.empty) {
+            list.innerHTML = `<div style="padding:20px; color:#555; text-align:center;">NO OPERATIONS SCHEDULED</div>`;
+        }
 
-    document.getElementById('lineup-form').style.display = 'block';
-    document.getElementById('lineup-viewer').style.display = 'none';
-};
-
-window.saveLineup = () => {
-    const title = document.getElementById('lu-title').value;
-    if (!title) return alert("Title required");
-
-    db.collection("lineups").add({
-        map: document.getElementById('luMapSelect').value,
-        x: tempLineupX, y: tempLineupY,
-        title: title,
-        url: document.getElementById('lu-url').value,
-        desc: document.getElementById('lu-desc').value
-    }).then(() => {
-        document.getElementById('lineup-form').style.display = 'none';
-        alert("Pin Added");
+        snap.forEach(doc => {
+            const m = doc.data();
+            list.innerHTML += `
+                <div class="list-item">
+                    <div style="font-weight:bold;">VS ${m.opponent}</div>
+                    <div style="font-size:0.8rem; color:#888;">${m.date} @ ${m.time} // ${m.map}</div>
+                </div>
+            `;
+        });
     });
-};
+}
 
-window.viewLineup = (id, data) => {
-    currentLineupId = id;
-    document.getElementById('lineup-form').style.display = 'none';
-    const viewer = document.getElementById('lineup-viewer');
-    viewer.style.display = 'block';
-    document.getElementById('view-lu-title').innerText = data.title;
-    document.getElementById('view-lu-link').href = data.url || '#';
-    document.getElementById('view-lu-desc').innerText = data.desc;
-};
+// --- 6. MATCH MANAGER ---
+function loadMatches() {
+    db.collection("events").orderBy("date", "desc").onSnapshot(snap => {
+        const list = document.getElementById('match-list');
+        list.innerHTML = "";
 
-window.deleteLineup = () => {
-    if (confirm("Delete pin?")) {
-        db.collection("lineups").doc(currentLineupId).delete();
-        document.getElementById('lineup-viewer').style.display = 'none';
-    }
-};
+        snap.forEach(doc => {
+            const m = doc.data();
+            const resultHtml = m.result
+                ? `<span style="color:${parseInt(m.result.us) > parseInt(m.result.them) ? '#0f0' : '#f00'}">${m.result.us} - ${m.result.them}</span>`
+                : `<span style="color:#888">PENDING</span>`;
 
-// --- MODULE: MAP VETO ---
-function loadMapVeto() {
-    db.collection("general").doc("map_veto").onSnapshot(doc => {
-        const d = doc.data() || {};
-        const g = document.getElementById('veto-grid');
-        g.innerHTML = "";
-        MAPS.forEach(m => {
-            const s = d[m] || 'neutral'; // neutral, ban, pick
-            g.innerHTML += `
-                <div class="veto-card ${s}" onclick="window.toggleVeto('${m}', '${s}')" style="background-image: url('https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/splash.png')">
-                    <div class="veto-overlay">
-                        <div><div>${m}</div><div style="font-size:0.6rem;">${s.toUpperCase()}</div></div>
+            list.innerHTML += `
+                <div class="list-item">
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <div>
+                            <span class="text-red" style="font-weight:bold; font-size:0.8rem;">${m.date}</span>
+                            <div style="font-weight:900; font-size:1.1rem;">VS ${m.opponent}</div>
+                            <div style="font-size:0.8rem; color:#666;">${m.map} • ${m.type}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:1.5rem; font-weight:900;">${resultHtml}</div>
+                            <button class="btn-text danger" onclick="deleteMatch('${doc.id}')">DELETE</button>
+                        </div>
                     </div>
                 </div>`;
         });
     });
 }
-window.toggleVeto = (m, s) => {
-    const n = s === 'neutral' ? 'ban' : (s === 'ban' ? 'pick' : 'neutral');
-    db.collection("general").doc("map_veto").set({ [m]: n }, { merge: true });
-};
-window.resetVeto = () => db.collection("general").doc("map_veto").set({});
 
-// --- MODULE: CAPTAIN MSG & ABSENCE (Basic) ---
-function loadCaptainMsg() {
-    db.collection("general").doc("captain_message").onSnapshot(d => { if (d.exists) document.getElementById('captain-msg-text').innerText = `"${d.data().text}"`; });
-}
-window.editCaptainMessage = () => document.getElementById('captain-msg-edit').style.display = 'block';
-window.saveCaptainMessage = () => {
-    db.collection("general").doc("captain_message").set({ text: document.getElementById('captain-msg-input').value }, { merge: true });
-    document.getElementById('captain-msg-edit').style.display = 'none';
-};
+window.addMatch = () => {
+    const opp = document.getElementById('m-opp').value;
+    if (!opp) return alert("Opponent Name Required");
 
-function loadAbsences() {
-    db.collection("leaves").orderBy("start").onSnapshot(s => {
-        const l = document.getElementById('absence-list');
-        l.innerHTML = "";
-        s.forEach(d => l.innerHTML += `<div><b style="color:#ff1e3c">${d.data().user}</b>: ${d.data().start}</div>`);
+    const us = document.getElementById('m-us').value;
+    const them = document.getElementById('m-them').value;
+
+    const data = {
+        opponent: opp,
+        date: document.getElementById('m-date').value,
+        time: document.getElementById('m-time').value,
+        map: document.getElementById('m-map').value,
+        type: document.getElementById('m-type').value,
+        result: (us && them) ? { us, them } : null
+    };
+
+    db.collection("events").add(data).then(() => {
+        alert("Operation Logged");
+        document.getElementById('m-opp').value = "";
     });
-}
-window.logAbsence = () => {
-    db.collection("leaves").add({
-        user: currentUser.displayName, start: document.getElementById('abs-start').value,
-        end: document.getElementById('abs-end').value, reason: document.getElementById('abs-reason').value
-    }).then(() => alert("Logged"));
 };
 
-// --- MODULE: MATCHES & DASHBOARD EVENTS ---
-function loadDashboardEvents() {
-    const today = new Date().toISOString().split('T')[0];
-    db.collection("events").where("date", ">=", today).orderBy("date").limit(3).onSnapshot(snap => {
-        const list = document.getElementById('dash-event-list');
-        list.innerHTML = "";
-        document.getElementById('active-ops-badge').innerText = `${snap.size} ACTIVE`;
-        document.getElementById('stat-ops').innerText = snap.size;
+window.deleteMatch = (id) => {
+    if (confirm("Confirm deletion of match record?")) db.collection("events").doc(id).delete();
+};
 
-        if (snap.empty) list.innerHTML = `<div class="empty-state">No upcoming operations.</div>`;
-        snap.forEach(doc => {
-            const m = doc.data();
-            list.innerHTML += `<div class="list-item"><b>VS ${m.opponent}</b> <small>${m.date} ${m.time || ''}</small></div>`;
-        });
-    });
-}
-
-function loadHubMatches() {
-    db.collection("events").orderBy("date", "desc").onSnapshot(snap => {
-        const list = document.getElementById('match-list');
+// --- 7. WAR ROOM ---
+function loadWarRoom() {
+    db.collection("war_room").onSnapshot(snap => {
+        const list = document.getElementById('enemy-list');
         list.innerHTML = "";
-        let wins = 0, total = 0;
         snap.forEach(doc => {
-            const m = doc.data();
-            if (m.result) { total++; if (parseInt(m.result.us) > parseInt(m.result.them)) wins++; }
             list.innerHTML += `
-                <div class="list-item">
-                    <div><b>VS ${m.opponent}</b> <small>${m.map}</small> ${m.result ? `(${m.result.us}-${m.result.them})` : ''}</div>
-                    <button style="color:red; background:none; border:none; cursor:pointer;" onclick="window.delMatch('${doc.id}')">✕</button>
+                <div class="list-item" style="cursor:pointer;" onclick="loadEnemyDetails('${doc.id}')">
+                    <b style="color:#fff;">${doc.data().name}</b>
                 </div>`;
         });
-        document.getElementById('dash-winrate').innerText = total > 0 ? Math.round((wins / total) * 100) + "%" : "0%";
     });
 }
-window.addMatch = () => {
-    const res = document.getElementById('m-us').value;
-    db.collection("events").add({
-        opponent: document.getElementById('m-opp').value, date: document.getElementById('m-date').value,
-        map: document.getElementById('m-map').value, result: res ? { us: res, them: document.getElementById('m-them').value } : null
-    }).then(() => alert("Added"));
-};
-window.delMatch = id => { if (confirm("Delete?")) db.collection("events").doc(id).delete(); };
 
-// --- MODULE: WAR ROOM ---
-function loadEnemies() {
-    db.collection("war_room").onSnapshot(s => {
-        const l = document.getElementById('enemy-list');
-        l.innerHTML = "";
-        s.forEach(d => l.innerHTML += `<div class="list-item" onclick="openEnemy('${d.id}')" style="cursor:pointer"><b>${d.data().name}</b></div>`);
-    });
-}
-window.newEnemy = () => { const n = prompt("Team Name:"); if (n) db.collection("war_room").add({ name: n, notes: "" }); };
-window.openEnemy = id => {
-    currentEnemyId = id;
-    db.collection("war_room").doc(id).get().then(d => {
-        document.getElementById('wr-title').innerText = d.data().name;
-        document.getElementById('wr-notes').value = d.data().notes;
-        document.getElementById('wr-content').style.display = 'block';
+window.newEnemy = () => {
+    const name = prompt("Target Team Name:");
+    if (name) db.collection("war_room").add({ name, notes: "" });
+};
+
+window.loadEnemyDetails = (id) => {
+    store.warRoom.activeTarget = id;
+    db.collection("war_room").doc(id).get().then(doc => {
+        const d = doc.data();
+        document.getElementById('wr-title').innerText = `INTEL: ${d.name}`;
+        document.getElementById('wr-notes').value = d.notes;
+        document.getElementById('wr-content').style.display = 'flex';
     });
 };
-window.saveIntel = () => db.collection("war_room").doc(currentEnemyId).update({ notes: document.getElementById('wr-notes').value }).then(() => alert("Intel Saved"));
-window.deleteEnemy = () => db.collection("war_room").doc(currentEnemyId).delete().then(() => document.getElementById('wr-content').style.display = 'none');
 
-// --- MODULE: STRATBOOK ---
+window.saveIntel = () => {
+    if (!store.warRoom.activeTarget) return;
+    db.collection("war_room").doc(store.warRoom.activeTarget).update({
+        notes: document.getElementById('wr-notes').value
+    }).then(() => alert("Intel Updated"));
+};
+
+// --- 8. STRATBOOK ENGINE ---
 function initStratbook() {
     canvas = document.getElementById('vpCanvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
-    canvas.onmousedown = e => {
-        if (tool === 'draw') { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); }
-        else if (tool === 'agent' && activeAgent) { const i = new Image(); i.src = activeAgent; i.crossOrigin = "anonymous"; i.onload = () => ctx.drawImage(i, e.offsetX - 15, e.offsetY - 15, 30, 30); }
-    };
-    canvas.onmousemove = e => { if (!isDrawing) return; ctx.lineTo(e.offsetX, e.offsetY); ctx.strokeStyle = document.getElementById('vpColor').value; ctx.lineWidth = 3; ctx.stroke(); };
-    window.onmouseup = () => isDrawing = false;
-}
-window.changeMap = () => {
-    document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-};
-window.clearPlanner = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
-window.saveStratToDB = () => alert("Saved to Cloud");
 
-// --- MODULE: ROSTER & ADMIN ---
-function loadRosterList() {
-    db.collection("roster").onSnapshot(s => {
-        const l = document.getElementById('roster-list-edit');
-        l.innerHTML = "";
-        s.forEach(d => l.innerHTML += `<div class="list-item" onclick="window.editRoster('${doc.id}')" style="cursor:pointer;">${doc.id} <span style="font-size:0.7rem;">${doc.data().role}</span></div>`);
+    // Load Palette
+    getAgents().then(agents => {
+        document.getElementById('agent-palette').innerHTML = agents.map(a =>
+            `<img src="${a.displayIcon}" onclick="window.setAgent('${a.displayIcon}')" title="${a.displayName}">`
+        ).join('');
+    });
+
+    // Canvas Events
+    canvas.onmousedown = startDraw;
+    canvas.onmousemove = draw;
+    window.onmouseup = () => store.stratbook.isDrawing = false;
+
+    // Resize Observer
+    new ResizeObserver(() => resizeCanvas()).observe(document.querySelector('.canvas-container'));
+}
+
+function resizeCanvas() {
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
+}
+
+function startDraw(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (store.stratbook.tool === 'draw') {
+        store.stratbook.isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    } else if (store.stratbook.tool === 'agent' && store.stratbook.activeAgent) {
+        const img = new Image();
+        img.src = store.stratbook.activeAgent;
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+            ctx.drawImage(img, x - 15, y - 15, 30, 30);
+            // Draw ring
+            ctx.beginPath();
+            ctx.arc(x, y, 17, 0, Math.PI * 2);
+            ctx.strokeStyle = store.stratbook.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        };
+    }
+}
+
+function draw(e) {
+    if (!store.stratbook.isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.strokeStyle = document.getElementById('vpColor').value;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+}
+
+window.setTool = (t) => { store.stratbook.tool = t; };
+window.setAgent = (url) => { store.stratbook.activeAgent = url; store.stratbook.tool = 'agent'; };
+window.clearStrat = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+window.changeMap = () => {
+    const map = document.getElementById('vpMapSelect').value;
+    // Note: In production, these URLs should be local or robust CDN
+    document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`;
+    window.clearStrat();
+};
+
+// --- 9. MAP VETO SYSTEM ---
+function loadMapVeto() {
+    const grid = document.getElementById('veto-grid');
+    db.collection("general").doc("veto_state").onSnapshot(doc => {
+        const data = doc.data() || {};
+        grid.innerHTML = "";
+
+        CONSTANTS.MAPS.forEach(map => {
+            const status = data[map] || 'neutral';
+            grid.innerHTML += `
+                <div class="veto-card ${status}" onclick="window.toggleVeto('${map}', '${status}')">
+                    <div class="veto-label">${map}</div>
+                    <div class="status-marker">${status}</div>
+                </div>
+            `;
+        });
     });
 }
-window.editRoster = id => {
+
+window.toggleVeto = (map, current) => {
+    const next = current === 'neutral' ? 'ban' : (current === 'ban' ? 'pick' : 'neutral');
+    db.collection("general").doc("veto_state").set({
+        [map]: next
+    }, { merge: true });
+};
+
+window.resetVeto = () => {
+    if (confirm("Reset Board?")) db.collection("general").doc("veto_state").set({});
+};
+
+// --- 10. ROSTER MANAGER ---
+function loadRosterMgr() {
+    db.collection("roster").onSnapshot(snap => {
+        const list = document.getElementById('roster-list-mgr');
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            list.innerHTML += `
+                <div class="list-item" onclick="window.editProfile('${doc.id}')" style="cursor:pointer;">
+                    <b>${doc.id}</b> <span class="badge">${d.role}</span>
+                </div>
+            `;
+        });
+    });
+}
+
+window.editProfile = (id) => {
     currentRosterId = id;
     document.getElementById('r-id').value = id;
-    document.getElementById('roster-edit-form').style.display = 'block';
+    document.getElementById('roster-editor').style.display = 'block';
 };
-window.saveRosterProfile = () => {
+
+window.saveProfile = () => {
     db.collection("roster").doc(currentRosterId).update({
         role: document.getElementById('r-role').value,
         pfp: document.getElementById('r-pfp').value
-    }).then(() => alert("Updated"));
+    }).then(() => alert("Profile Updated"));
 };
 
-function loadApps() {
-    db.collection("applications").onSnapshot(s => {
-        const l = document.getElementById('admin-list');
-        l.innerHTML = "";
-        s.forEach(d => l.innerHTML += `
-            <div class="list-item" style="flex-direction:column; align-items:flex-start;">
-                <div><b>${d.data().user}</b> <small>${d.data().rank}</small></div>
-                <i>"${d.data().why}"</i>
-                <div style="margin-top:5px;"><button class="btn-xs" style="background:green" onclick="acceptApp('${d.id}','${d.data().user}','${d.data().uid}')">ACCEPT</button> <button class="btn-xs" style="background:red" onclick="rejectApp('${d.id}')">REJECT</button></div>
-            </div>`);
+// --- 11. ADMIN PANEL ---
+function loadAdmin() {
+    db.collection("applications").onSnapshot(snap => {
+        const list = document.getElementById('admin-list');
+        list.innerHTML = "";
+
+        if (snap.empty) {
+            list.innerHTML = "<div style='padding:20px; text-align:center; color:#555;'>No Pending Applications</div>";
+            return;
+        }
+
+        snap.forEach(doc => {
+            const a = doc.data();
+            list.innerHTML += `
+                <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+                    <div style="font-size:1.1rem; color:#fff; font-weight:900;">${a.user}</div>
+                    <div style="font-size:0.8rem; color:#888;">${a.rank} • ${a.role}</div>
+                    <div style="margin:10px 0; font-style:italic; padding-left:10px; border-left:2px solid #333;">"${a.why}"</div>
+                    <a href="${a.tracker}" target="_blank" style="color:var(--red); font-size:0.8rem; margin-bottom:10px;">View Tracker</a>
+                    <div style="display:flex; gap:10px; width:100%;">
+                        <button class="btn-sm primary" style="flex:1; background:green;" onclick="window.decideApp('${doc.id}', '${a.user}', '${a.uid}', true)">ACCEPT</button>
+                        <button class="btn-sm primary" style="flex:1; background:red;" onclick="window.decideApp('${doc.id}', null, null, false)">REJECT</button>
+                    </div>
+                </div>
+            `;
+        });
     });
 }
-window.acceptApp = (id, user, uid) => {
-    db.collection("roster").doc(user).set({ uid: uid, role: "Tryout", rank: "Unranked", joined: new Date().toISOString() }).then(() => db.collection("applications").doc(id).delete());
+
+window.decideApp = (docId, username, uid, accepted) => {
+    if (accepted) {
+        db.collection("roster").doc(username).set({
+            uid: uid,
+            role: "Tryout",
+            rank: "Unranked",
+            joinedAt: new Date().toISOString()
+        }).then(() => {
+            db.collection("applications").doc(docId).delete();
+            alert(`${username} Accepted.`);
+        });
+    } else {
+        if (confirm("Reject this applicant?")) {
+            db.collection("applications").doc(docId).delete();
+        }
+    }
 };
-window.rejectApp = id => db.collection("applications").doc(id).delete();
+
+// --- UTILS ---
+window.logAbsence = () => {
+    db.collection("leaves").add({
+        user: currentUser.displayName,
+        start: document.getElementById('abs-start').value,
+        end: document.getElementById('abs-end').value,
+        reason: document.getElementById('abs-reason').value
+    }).then(() => alert("Absence Logged"));
+};
+
+window.saveMsg = () => {
+    const txt = document.getElementById('capt-input').value;
+    db.collection("general").doc("captain_message").set({ text: txt }, { merge: true });
+    document.getElementById('capt-edit').style.display = 'none';
+};
+
+window.toggleEditMsg = () => {
+    document.getElementById('capt-edit').style.display = 'block';
+    document.getElementById('capt-input').value = document.getElementById('dashboard-msg').innerText.replace(/"/g, '');
+};

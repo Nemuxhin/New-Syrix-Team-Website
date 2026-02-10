@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SYRIX — Built Under Pressure</title>
     <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -12,44 +14,157 @@
 <body id="page-home">
 
     <nav>
-        <div class="logo">SYRIX</div>
-        <ul class="nav-links">
-            <li><a href="#roster">Roster</a></li>
-            <li><a href="#matches">Matches</a></li>
-            <li><a href="hub.html" class="highlight-link">HUB ACCESS</a></li>
-        </ul>
+        <div class="nav-left">
+            <div class="logo">SYRIX</div>
+        </div>
+        <div class="nav-center">
+            <ul class="nav-links">
+                <li><a href="#about">About</a></li>
+                <li><a href="#roster">Roster</a></li>
+                <li><a href="#matches">Schedule</a></li>
+                <li><a href="#shop">Shop</a></li>
+            </ul>
+        </div>
+        <div class="nav-right">
+            <a href="hub.html" class="btn-nav">
+                <i class="fa-solid fa-lock"></i> HUB ACCESS
+            </a>
+        </div>
     </nav>
 
     <header class="hero">
         <div class="hero-video-wrap">
             <div class="video-overlay"></div>
-            <iframe class="hero-yt" src="https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1&mute=1&controls=0&loop=1&playlist=y9zweO_hU1U&playsinline=1" frameborder="0" allow="autoplay; encrypted-media"></iframe>
+            <iframe class="hero-yt"
+                    src="https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1&mute=1&controls=0&loop=1&playlist=y9zweO_hU1U&playsinline=1&iv_load_policy=3&rel=0"
+                    frameborder="0" allow="autoplay; encrypted-media"></iframe>
         </div>
         <div class="heroContent">
-            <h1>Built Under<br><span style="color:var(--red)">Pressure</span></h1>
-            <p>SYRIX is a Valorant-first organisation built on discipline, systems, and execution.</p>
+            <div class="hero-badge">EST. 2024 • VALORANT PREMIER</div>
+            <h1>BUILT UNDER<br><span class="text-red">PRESSURE</span></h1>
+            <p>We are a disciplined organization dedicated to achieving excellence through strategy, systems, and execution.</p>
             <div class="heroActions">
-                <button class="btn primary" onclick="window.location.href='hub.html'">Apply to Join</button>
-                <button class="btn ghost" onclick="document.getElementById('roster').scrollIntoView()">View Roster</button>
+                <button class="btn-lg btn-red" onclick="window.location.href='hub.html'">
+                    <i class="fa-solid fa-file-signature"></i> APPLY TO JOIN
+                </button>
+                <button class="btn-lg btn-outline" onclick="document.getElementById('roster').scrollIntoView({behavior: 'smooth'})">
+                    VIEW ROSTER
+                </button>
+            </div>
+        </div>
+
+        <div class="hero-ticker">
+            <div class="ticker-content">
+                <span>// DOMINANCE IS A HABIT</span>
+                <span>// EXECUTE THE STRATEGY</span>
+                <span>// PLAY FOR THE BADGE</span>
+                <span>// DOMINANCE IS A HABIT</span>
+                <span>// EXECUTE THE STRATEGY</span>
+                <span>// PLAY FOR THE BADGE</span>
             </div>
         </div>
     </header>
 
-    <section id="roster" class="container">
-        <h2 class="sectionTitle">Active Roster</h2>
-        <div class="featureGrid" id="landing-roster">
-            <div style="color:#888;">Loading Database...</div>
+    <section class="stats-bar">
+        <div class="stat-item">
+            <small>CURRENT SEASON</small>
+            <div id="stat-record">LOADING...</div>
+        </div>
+        <div class="stat-item">
+            <small>WIN RATE</small>
+            <div id="stat-winrate" class="text-red">--%</div>
+        </div>
+        <div class="stat-item">
+            <small>ACTIVE UNITS</small>
+            <div id="stat-roster">--</div>
+        </div>
+        <div class="stat-item">
+            <small>NEXT MATCH</small>
+            <div id="stat-next">TBD</div>
+        </div>
+    </section>
+
+    <section id="about" class="container">
+        <div class="split-layout">
+            <div class="text-block">
+                <h2 class="sectionTitle">THE <span class="text-red">SYNDICATE</span></h2>
+                <p class="lead">Syrix was founded on the principle that uncompromising skill and unified strategy conquer all.</p>
+                <p>We are not just a team; we are a system. From our rigorous training protocols to our detailed match analysis, every aspect of Syrix is designed to produce champions.</p>
+                <ul class="feature-list">
+                    <li><i class="fa-solid fa-check text-red"></i> Structured Practice Environment</li>
+                    <li><i class="fa-solid fa-check text-red"></i> Dedicated Coaching Staff</li>
+                    <li><i class="fa-solid fa-check text-red"></i> Path to Pro Support</li>
+                </ul>
+            </div>
+            <div class="image-block">
+                <div class="glass-panel">
+                    <h3>OUR MISSION</h3>
+                    <p>To dominate the European Tier 2/3 scene and establish a legacy of tactical excellence.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="roster" class="container bg-darker">
+        <h2 class="sectionTitle">ACTIVE <span class="text-red">ROSTER</span></h2>
+        <div class="featureGrid" id="landing-roster-grid">
+            <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Accessing Database...</div>
         </div>
     </section>
 
     <section id="matches" class="container">
-        <h2 class="sectionTitle">Mission Log</h2>
-        <div class="newsGrid" id="landing-matches">
+        <h2 class="sectionTitle">MISSION <span class="text-red">LOG</span></h2>
+        <div class="newsGrid" id="landing-matches-grid">
+        </div>
+    </section>
+
+    <section id="shop" class="container">
+        <h2 class="sectionTitle">SUPPLY <span class="text-red">DROP</span></h2>
+        <div class="shopGrid">
+            <div class="product">
+                <div class="prod-img" style="background-image: url('https://images.unsplash.com/photo-1556821840-3a63f95609a7');"></div>
+                <div class="prod-info">
+                    <div>
+                        <h4>BLACKOUT HOODIE</h4>
+                        <small>Heavyweight Cotton</small>
+                    </div>
+                    <span class="price">€69.00</span>
+                </div>
+            </div>
+            <div class="product">
+                <div class="prod-img" style="background-image: url('https://images.unsplash.com/photo-1521572163474-6864f9cf17ab');"></div>
+                <div class="prod-info">
+                    <div>
+                        <h4>OFFICIAL JERSEY</h4>
+                        <small>2026 Season Kit</small>
+                    </div>
+                    <span class="price">€45.00</span>
+                </div>
+            </div>
+            <div class="product">
+                <div class="prod-img" style="background-image: url('https://images.unsplash.com/photo-1542291026-7eec264c27ff');"></div>
+                <div class="prod-info">
+                    <div>
+                        <h4>TACTICAL SLEEVE</h4>
+                        <small>Performance Wear</small>
+                    </div>
+                    <span class="price">€25.00</span>
+                </div>
+            </div>
         </div>
     </section>
 
     <footer>
-        <p>© 2026 SYRIX ESPORTS • BLACK • RED • VALORANT</p>
+        <div class="footer-content">
+            <div class="footer-logo">SYRIX</div>
+            <div class="footer-links">
+                <a href="#">Twitter</a>
+                <a href="#">Discord</a>
+                <a href="#">YouTube</a>
+                <a href="hub.html">Staff Login</a>
+            </div>
+            <p class="copyright">© 2026 SYRIX ESPORTS. ALL RIGHTS RESERVED.</p>
+        </div>
     </footer>
 
     <script src="assets/js/script.js"></script>
