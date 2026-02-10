@@ -1,80 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SYRIX // Command Center</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
-
+    <link rel="stylesheet" href="assets/css/styles.css" />
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
-
     <div id="hubLocked" class="hubWrap">
-        <div class="hubPanel" style="text-align: center; max-width: 400px; margin: 0 auto;">
-            <h2 style="letter-spacing: 5px; margin-bottom: 30px; color: var(--red);">ENCRYPTED TERMINAL</h2>
-            <button class="btn primary" style="width: 100%;" onclick="window.loginWithDiscord()">Authenticate via Discord</button>
+        <div class="hubPanel" style="text-align: center; max-width: 400px; margin: 100px auto;">
+            <h2 style="letter-spacing: 5px; margin-bottom: 30px;">UNIT AUTH REQUIRED</h2>
+            <button class="btn primary" onclick="window.loginWithDiscord()">Login with Discord</button>
         </div>
     </div>
 
     <div id="hubUnlocked" style="display: none;">
         <nav style="position: relative; background: rgba(0,0,0,0.5);">
             <div class="logo">SYRIX HUB</div>
-            <div id="userProfile" style="font-size: 0.7rem; font-weight: bold; color: var(--red);">INITIALIZING...</div>
+            <div id="userProfile" style="color: var(--red); font-size: 0.7rem; font-weight: 800;">AUTH_PENDING</div>
         </nav>
 
         <div class="hubWrap" style="padding: 40px 10%; align-items: flex-start;">
-            <div style="width: 100%;">
-                <div class="hubTabs">
-                    <button class="hubTab active" onclick="window.showTab('planner', this)">Stratbook</button>
-                    <button class="hubTab" onclick="window.showTab('roster', this)">Active Squad</button>
-                    <button class="hubTab" onclick="window.showTab('heatmap', this)">Heatmap</button>
-                </div>
+            <div class="hubTabs">
+                <button class="hubTab active" onclick="window.showTab('planner', this)">Stratbook</button>
+                <button class="hubTab" onclick="window.showTab('roster', this)">Roster</button>
+            </div>
 
-                <div id="planner" class="tabView active">
-                    <div style="display: grid; grid-template-columns: 1fr 320px; gap: 30px;">
-                        <div class="vpViewport" style="background: #000; position: relative; border: 1px solid var(--border-soft);">
-                            <canvas id="vpCanvas" style="position: absolute; z-index: 10; width: 100%; height: 100%; cursor: crosshair;"></canvas>
-                            <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png" style="width: 100%; opacity: 0.5;">
-                        </div>
-                        <div class="hubPanel">
-                            <h4 style="font-size: 0.6rem; color: var(--red); letter-spacing: 2px; margin-bottom: 20px;">TACTICAL OVERRIDE</h4>
-                            <select id="vpMapSelect" onchange="window.changeMap()" style="width:100%; background:#000; color:#fff; border:1px solid var(--border-soft); padding:10px;">
-                                <option value="ascent">ASCENT</option>
-                                <option value="bind">BIND</option>
-                                <option value="haven">HAVEN</option>
-                                <option value="lotus">LOTUS</option>
-                            </select>
-                            <div style="margin-top: 20px;">
-                                <label style="font-size: 0.6rem; display: block; margin-bottom: 5px;">MARKER COLOR</label>
-                                <input type="color" id="vpColor" value="#ff1e3c" style="width: 100%; height: 40px; border: none; background: transparent;">
-                            </div>
-                            <button class="btn ghost" style="width: 100%; margin-top: 30px;" onclick="window.clearPlanner()">Clear Board</button>
-                        </div>
+            <div id="planner" class="tabView active">
+                <div style="display: grid; grid-template-columns: 1fr 300px; gap: 30px;">
+                    <div class="vpViewport" style="position:relative; background:#000; height: 60vh; border: 1px solid var(--border-soft);">
+                        <canvas id="vpCanvas" style="position:absolute; z-index:10; width:100%; height:100%;"></canvas>
+                        <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png" style="width:100%; height: 100%; object-fit: contain; opacity: 0.5;">
                     </div>
-                </div>
-
-                <div id="roster" class="tabView">
-                    <div class="hubPanel" style="max-width: 800px; margin: 0 auto;">
-                        <h3 style="margin-bottom: 30px; letter-spacing: 2px;">REAL-TIME UNIT LOG</h3>
-                        <div id="hubRosterList" style="display: flex; flex-direction: column; gap: 10px;">
-                        </div>
-                    </div>
-                </div>
-
-                <div id="heatmap" class="tabView">
                     <div class="hubPanel">
-                        <h3 style="margin-bottom: 20px;">TEAM AVAILABILITY</h3>
-                        <div id="heatmapGrid" style="display: grid; grid-template-columns: 100px 1fr; gap: 2px; background: var(--border-soft);">
-                        </div>
+                        <select id="vpMapSelect" onchange="window.changeMap()" style="width:100%; background:#000; color:#fff; border:1px solid var(--border-soft); padding:10px;">
+                            <option value="ascent">ASCENT</option>
+                            <option value="bind">BIND</option>
+                            <option value="haven">HAVEN</option>
+                        </select>
+                        <input type="color" id="vpColor" value="#ff1e3c" style="width:100%; height:40px; margin-top:20px; border:none; background:none;">
+                        <button class="btn ghost" style="width:100%; margin-top:20px;" onclick="window.clearPlanner()">Clear</button>
                     </div>
                 </div>
             </div>
+
+            <div id="roster" class="tabView">
+                <div id="rosList" class="hubPanel" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
         </div>
     </div>
-
     <script src="assets/js/script.js"></script>
 </body>
 </html>
