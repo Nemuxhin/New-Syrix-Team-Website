@@ -1,17 +1,17 @@
 ﻿/**
- * SYRIX ESPORTS - DEEP STRUCTURE LOGIC v13.0
- * TARGET: Root Collections -> Map Documents -> Subcollections
+ * SYRIX ESPORTS - UNIVERSAL LOADER v14.0
+ * TARGET: Old Database (syrix-team-schedule)
+ * STRATEGY: Root Collections + Hybrid Fetching
  */
 
-// --- 1. CONFIGURATION ---
+// --- 1. CONFIGURATION (Old Database) ---
 const firebaseConfig = {
     apiKey: "AIzaSyAcZy0oY6fmwJ4Lg9Ac-Bq__eMukMC_u0w",
     authDomain: "syrix-team-schedule.firebaseapp.com",
     projectId: "syrix-team-schedule",
     storageBucket: "syrix-team-schedule.firebasestorage.app",
     messagingSenderId: "571804588891",
-    appId: "1:571804588891:web:c3c17a4859b6b4f057187e",
-    measurementId: "G-VGXG0NCTGX"
+    appId: "1:571804588891:web:c3c17a4859b6b4f057187e"
 };
 
 const CONSTANTS = {
@@ -27,41 +27,70 @@ let canvas, ctx, currentTool = 'draw', activeAgent = null, isDrawing = false;
 let currentEnemyId = null, currentRosterId = null, compSlotIndex = null;
 let tempLineupX = 0, tempLineupY = 0, currentLineupId = null;
 
-// --- 3. CORE FUNCTIONS ---
+// --- 3. SYSTEM DIAGNOSTICS ---
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("🚀 System Booting...");
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        console.log("✅ Firebase Initialized: syrix-team-schedule");
 
-// >> LANDING PAGE (Root Level Data)
+        // Auth Listener
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                console.log("👤 User Logged In:", user.displayName);
+                currentUser = user;
+                if (document.body.id === 'page-hub') handleHubAuth(user);
+            } else {
+                console.log("⚪ Guest Mode");
+                if (document.body.id === 'page-hub') handleHubAuth(null);
+            }
+        });
+
+        // Load Page Data
+        if (document.body.id === 'page-home') loadLandingData();
+        if (document.body.id === 'page-hub') { initStratbook(); fetchAgents(); }
+
+    } catch (e) {
+        console.error("🔥 CRITICAL STARTUP ERROR:", e);
+        alert("Startup Failed: " + e.message);
+    }
+});
+
+// --- 4. DATA LOADERS (Root Level) ---
+
 function loadLandingData() {
-    console.log("Loading Landing Data...");
+    console.log("📥 Loading Landing Page...");
 
-    // Events (Root)
+    // EVENTS
     db.collection("events").orderBy("date").onSnapshot(snap => {
         const div = document.getElementById('landing-matches');
         if (div) {
             div.innerHTML = "";
-            let w = 0, t = 0;
+            console.log(`- Found ${snap.size} Events`);
             snap.forEach(doc => {
                 const m = doc.data();
-                if (m.result) { t++; if (parseInt(m.result.us) > parseInt(m.result.them)) w++; }
-                else if (m.date >= new Date().toISOString().split('T')[0]) {
+                // Only show future events
+                if (m.date >= new Date().toISOString().split('T')[0] && !m.result) {
                     div.innerHTML += `
                         <div class="match-card-landing">
-                            <span class="match-date">${m.date} // ${m.time || 'TBD'}</span>
+                            <span class="match-date">${m.date}</span>
                             <div class="match-versus">VS ${m.opponent}</div>
                             <div class="match-meta">${m.map || 'TBD'}</div>
                         </div>`;
                 }
             });
-            const wr = t > 0 ? Math.round((w / t) * 100) : 0;
-            if (document.getElementById('stat-winrate')) document.getElementById('stat-winrate').innerText = `${wr}%`;
+            if (div.innerHTML === "") div.innerHTML = "<div style='color:#555'>No Operations Scheduled</div>";
         }
-    });
+    }, err => console.error("Events Error:", err));
 
-    // Roster (Root)
+    // ROSTER
     db.collection("roster").onSnapshot(snap => {
         const div = document.getElementById('landing-roster');
         if (div) {
             div.innerHTML = "";
-            if (document.getElementById('stat-roster')) document.getElementById('stat-roster').innerText = snap.size;
+            console.log(`- Found ${snap.size} Roster Members`);
             snap.forEach(doc => {
                 const p = doc.data();
                 div.innerHTML += `
@@ -71,10 +100,9 @@ function loadLandingData() {
                     </div>`;
             });
         }
-    });
+    }, err => console.error("Roster Error:", err));
 }
 
-// >> AUTHENTICATION
 function handleHubAuth(user) {
     if (!user) {
         document.getElementById('hubLocked').style.display = 'flex';
@@ -82,17 +110,19 @@ function handleHubAuth(user) {
         return;
     }
 
+    // Check Roster Access
     db.collection("roster").where("uid", "==", user.uid).get().then(snap => {
         if (!snap.empty || CONSTANTS.ADMIN_UIDS.includes(user.uid)) {
+            // SUCCESS
             document.getElementById('hubLocked').style.display = 'none';
             document.getElementById('hubUnlocked').style.display = 'flex';
-            document.getElementById('user-name').innerText = user.displayName ? user.displayName.toUpperCase() : "AGENT";
+            document.getElementById('user-name').innerText = user.displayName.toUpperCase();
 
             if (CONSTANTS.ADMIN_UIDS.includes(user.uid)) {
                 document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'inline-block');
             }
 
-            // LOAD MODULES
+            // Init ALL Dashboard Modules
             loadCaptainMsg(); loadAbsences(); loadDashboardEvents();
             loadWarRoom(); loadMapVeto(); loadHubMatches();
             loadRosterList(); loadComp(); changeLineupMap();
@@ -101,48 +131,79 @@ function handleHubAuth(user) {
             if (CONSTANTS.ADMIN_UIDS.includes(user.uid)) loadApps();
 
         } else {
+            // NOT ENLISTED
             document.getElementById('login-module').style.display = 'none';
             document.getElementById('app-module').style.display = 'block';
             if (document.getElementById('app-ign') && user.displayName) document.getElementById('app-ign').value = user.displayName;
         }
+    }).catch(err => console.error("Auth Check Error:", err));
+}
+
+// --- 5. TACTICAL MODULES (Hybrid Fetching) ---
+
+// LINEUPS: Tries Nested Folder first, falls back to Query
+window.changeLineupMap = () => {
+    const map = document.getElementById('luMapSelect').value;
+    document.getElementById('luMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`;
+
+    console.log(`Fetching Lineups for ${map}...`);
+    const container = document.getElementById('lineup-pins');
+    container.innerHTML = "";
+
+    // METHOD A: Nested Collection (lineups/ASCENT/items)
+    db.collection("lineups").doc(map).collection("items").get().then(snap => {
+        if (!snap.empty) {
+            console.log(`- Found ${snap.size} lineups via Nested Folder`);
+            renderPins(snap, container);
+        } else {
+            // METHOD B: Flat Query (lineups where map == ASCENT)
+            console.log("- Nested empty. Trying Flat Query...");
+            db.collection("lineups").where("map", "==", map).get().then(flatSnap => {
+                console.log(`- Found ${flatSnap.size} lineups via Flat Query`);
+                renderPins(flatSnap, container);
+            });
+        }
+    });
+};
+
+function renderPins(snap, container) {
+    snap.forEach(doc => {
+        const d = doc.data();
+        const pin = document.createElement('div');
+        pin.className = "pin";
+        pin.style.left = `${d.x}%`;
+        pin.style.top = `${d.y}%`;
+        pin.onclick = (e) => { e.stopPropagation(); window.viewLineup(doc.id, d); };
+        container.appendChild(pin);
     });
 }
 
-// >> DATABASE AUTO-FIXER
-async function initializeDatabase() {
-    const check = await db.collection("general").doc("captain_message").get();
-    if (!check.exists) {
-        console.log("⚠️ Initializing Database...");
-        const batch = db.batch();
-        batch.set(db.collection("general").doc("captain_message"), { text: "Welcome to Syrix." });
-        batch.set(db.collection("roster").doc("Operator"), { role: "Captain", rank: "Radiant", uid: currentUser.uid, pfp: "" });
+window.saveLineup = () => {
+    const map = document.getElementById('luMapSelect').value;
+    // Default to Nested Structure for new saves
+    db.collection("lineups").doc(map).collection("items").add({
+        x: tempLineupX, y: tempLineupY,
+        title: document.getElementById('lu-title').value,
+        url: document.getElementById('lu-url').value,
+        desc: document.getElementById('lu-desc').value
+    }).then(() => {
+        document.getElementById('lineup-form').style.display = 'none';
+        alert("Lineup Saved.");
+        window.changeLineupMap(); // Refresh
+    });
+};
 
-        // Initialize Map Folders
-        CONSTANTS.MAPS.forEach(map => {
-            batch.set(db.collection("comps").doc(map), { agents: [null, null, null, null, null] });
-            batch.set(db.collection("playbooks").doc(map), { attack: "", defense: "" });
-        });
+// STRATBOOK: Same Hybrid Logic
+window.saveStrat = () => {
+    const map = document.getElementById('vpMapSelect').value;
+    db.collection("strats").doc(map).collection("drawings").add({
+        author: currentUser.displayName,
+        img: canvas.toDataURL(),
+        date: new Date().toISOString()
+    }).then(() => alert("Strat Saved"));
+};
 
-        await batch.commit();
-        console.log("✅ Database Structure Created.");
-        window.location.reload();
-    }
-}
-
-// >> ASSETS API
-async function fetchAgents() {
-    try {
-        const res = await fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true');
-        const json = await res.json();
-        const agents = json.data;
-        const sp = document.getElementById('agent-palette');
-        const cp = document.getElementById('comp-agent-list');
-        if (sp) sp.innerHTML = agents.map(a => `<img src="${a.displayIcon}" onclick="window.prepAgent('${a.displayIcon}')" title="${a.displayName}">`).join('');
-        if (cp) cp.innerHTML = agents.map(a => `<img src="${a.displayIcon}" onclick="window.setCompSlot('${a.displayIcon}')" title="${a.displayName}">`).join('');
-    } catch (e) { console.error(e); }
-}
-
-// --- 4. UI HANDLERS ---
+// --- 6. STANDARD MODULES ---
 
 window.loginDiscord = () => auth.signInWithPopup(new firebase.auth.OAuthProvider('oidc.discord'));
 
@@ -153,10 +214,7 @@ window.submitApp = () => {
         tracker: document.getElementById('app-tracker').value, why: document.getElementById('app-why').value,
         submitted: new Date().toISOString()
     };
-    db.collection("applications").add(d).then(() => {
-        fetch(CONSTANTS.WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds: [{ title: `New App: ${d.user}`, color: 16711680 }] }) });
-        alert("Application Sent.");
-    });
+    db.collection("applications").add(d).then(() => alert("Application Sent"));
 };
 
 window.setTab = (id, btn) => {
@@ -167,7 +225,18 @@ window.setTab = (id, btn) => {
     if (id === 'stratbook' && canvas) { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
 };
 
-// --- MODULES ---
+// ASSETS
+async function fetchAgents() {
+    try {
+        const res = await fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true');
+        const json = await res.json();
+        const agents = json.data;
+        const sp = document.getElementById('agent-palette');
+        const cp = document.getElementById('comp-agent-list');
+        if (sp) sp.innerHTML = agents.map(a => `<img src="${a.displayIcon}" onclick="window.prepAgent('${a.displayIcon}')">`).join('');
+        if (cp) cp.innerHTML = agents.map(a => `<img src="${a.displayIcon}" onclick="window.setCompSlot('${a.displayIcon}')">`).join('');
+    } catch (e) { console.error(e); }
+}
 
 // DASHBOARD
 function loadCaptainMsg() { db.collection("general").doc("captain_message").onSnapshot(d => { if (d.exists) document.getElementById('capt-msg').innerText = `"${d.data().text}"`; }); }
@@ -205,7 +274,7 @@ window.saveAvail = () => {
     }, { merge: true }).then(() => alert("Added"));
 };
 
-// STRATBOOK (Nested inside 'strats/[MapName]/drawings')
+// STRATBOOK CANVAS
 function initStratbook() {
     canvas = document.getElementById('vpCanvas'); if (!canvas) return; ctx = canvas.getContext('2d');
     canvas.onmousedown = e => { if (currentTool === 'draw') { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); } else if (activeAgent) { const i = new Image(); i.src = activeAgent; i.crossOrigin = "anonymous"; i.onload = () => ctx.drawImage(i, e.offsetX - 15, e.offsetY - 15, 30, 30); } };
@@ -215,17 +284,8 @@ function initStratbook() {
 window.prepAgent = u => { activeAgent = u; currentTool = 'agent'; };
 window.clearStrat = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 window.changeMap = () => { document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`; window.clearStrat(); };
-window.saveStrat = () => {
-    const map = document.getElementById('vpMapSelect').value;
-    // Save to NESTED collection: strats -> [Map] -> drawings -> [AutoID]
-    db.collection("strats").doc(map).collection("drawings").add({
-        author: currentUser.displayName,
-        img: canvas.toDataURL(),
-        date: new Date().toISOString()
-    }).then(() => alert("Strat Saved"));
-};
 
-// COMPS (Document ID = Map Name)
+// COMPS
 window.loadComp = () => {
     db.collection("comps").doc(document.getElementById('comp-map').value).get().then(d => {
         const ag = d.exists ? d.data().agents : [null, null, null, null, null];
@@ -237,33 +297,8 @@ window.editComp = i => { compSlotIndex = i; document.getElementById('comp-picker
 window.setCompSlot = u => { document.getElementById(`cs-${compSlotIndex}`).dataset.img = u; document.getElementById(`cs-${compSlotIndex}`).innerHTML = `<img src="${u}">`; document.getElementById('comp-picker').style.display = 'none'; };
 window.saveComp = () => { const a = []; for (let i = 0; i < 5; i++) a.push(document.getElementById(`cs-${i}`).dataset.img); db.collection("comps").doc(document.getElementById('comp-map').value).set({ agents: a }).then(() => alert("Saved")); };
 
-// LINEUPS (Nested inside 'lineups/[MapName]/items')
-window.changeLineupMap = () => {
-    const map = document.getElementById('luMapSelect').value;
-    document.getElementById('luMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`;
-
-    // NESTED READ
-    db.collection("lineups").doc(map).collection("items").onSnapshot(s => {
-        const c = document.getElementById('lineup-pins'); c.innerHTML = "";
-        s.forEach(d => {
-            const p = document.createElement('div'); p.className = "pin";
-            p.style.left = `${d.data().x}%`; p.style.top = `${d.data().y}%`;
-            p.onclick = e => { e.stopPropagation(); window.viewLineup(d.id, d.data()); };
-            c.appendChild(p);
-        });
-    });
-};
+// LINEUPS MAP
 window.mapClickLineup = e => { const r = document.getElementById('lu-map-wrap').getBoundingClientRect(); tempLineupX = ((e.clientX - r.left) / r.width) * 100; tempLineupY = ((e.clientY - r.top) / r.height) * 100; document.getElementById('lineup-form').style.display = 'block'; document.getElementById('lineup-viewer').style.display = 'none'; };
-window.saveLineup = () => {
-    const map = document.getElementById('luMapSelect').value;
-    // NESTED WRITE
-    db.collection("lineups").doc(map).collection("items").add({
-        x: tempLineupX, y: tempLineupY,
-        title: document.getElementById('lu-title').value,
-        url: document.getElementById('lu-url').value,
-        desc: document.getElementById('lu-desc').value
-    }).then(() => { document.getElementById('lineup-form').style.display = 'none'; alert("Saved"); });
-};
 window.viewLineup = (id, d) => { currentLineupId = id; document.getElementById('lineup-form').style.display = 'none'; document.getElementById('lineup-viewer').style.display = 'block'; document.getElementById('view-lu-title').innerText = d.title; document.getElementById('view-lu-link').href = d.url; document.getElementById('view-lu-desc').innerText = d.desc; };
 window.deleteLineup = () => {
     const map = document.getElementById('luMapSelect').value;
@@ -308,45 +343,5 @@ window.addPartner = () => db.collection("partners").add({ name: document.getElem
 window.addNews = () => db.collection("news").add({ title: document.getElementById('news-title').value, body: document.getElementById('news-body').value }).then(() => alert("Posted"));
 window.addIntel = () => db.collection("intel").add({ title: document.getElementById('intel-title').value, url: document.getElementById('intel-url').value }).then(() => alert("Added"));
 
-// PLAYBOOK (Document ID = Map Name, Fields = Sides)
-window.loadPlaybook = () => {
-    const map = document.getElementById('pb-map').value;
-    const side = document.getElementById('pb-side').value.toLowerCase(); // 'attack' or 'defense'
-    db.collection("playbooks").doc(map).get().then(d => {
-        // Read specific field (attack/defense) from the Map Doc
-        document.getElementById('pb-text').value = d.exists && d.data()[side] ? d.data()[side] : "";
-    });
-};
-window.savePlaybook = () => {
-    const map = document.getElementById('pb-map').value;
-    const side = document.getElementById('pb-side').value.toLowerCase();
-    // Save to specific field using merge
-    db.collection("playbooks").doc(map).set({ [side]: document.getElementById('pb-text').value }, { merge: true }).then(() => alert("Saved"));
-};
-
-// --- 5. INITIALIZATION SEQUENCE ---
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        auth = firebase.auth();
-        console.log("Firebase Connected (Deep Structure).");
-
-        const loader = document.getElementById('system-loader');
-        if (loader) loader.style.display = 'none';
-
-        auth.onAuthStateChanged(user => {
-            currentUser = user;
-            if (document.body.id === 'page-hub') {
-                handleHubAuth(user);
-                if (user) initializeDatabase();
-            }
-        });
-
-        if (document.body.id === 'page-home') loadLandingData();
-        if (document.body.id === 'page-hub') { initStratbook(); fetchAgents(); }
-
-    } catch (e) {
-        alert("CRITICAL ERROR: " + e.message);
-    }
-});
+window.loadPlaybook = () => { db.collection("playbooks").doc(`${document.getElementById('pb-map').value}_${document.getElementById('pb-side').value}`).get().then(d => document.getElementById('pb-text').value = d.exists ? d.data().text : ""); };
+window.savePlaybook = () => { db.collection("playbooks").doc(`${document.getElementById('pb-map').value}_${document.getElementById('pb-side').value}`).set({ text: document.getElementById('pb-text').value }).then(() => alert("Saved")); };
