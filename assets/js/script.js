@@ -1,9 +1,9 @@
 ﻿/**
- * SYRIX ESPORTS - CORE LOGIC v11.0 (Root Level)
- * TARGET: Root Collections (Standard Structure)
+ * SYRIX ESPORTS - DEEP STRUCTURE LOGIC v13.0
+ * TARGET: Root Collections -> Map Documents -> Subcollections
  */
 
-// --- 1. CONFIGURATION (Your Original Keys) ---
+// --- 1. CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyAcZy0oY6fmwJ4Lg9Ac-Bq__eMukMC_u0w",
     authDomain: "syrix-team-schedule.firebaseapp.com",
@@ -15,15 +15,13 @@ const firebaseConfig = {
 };
 
 const CONSTANTS = {
-    // Replace with your Discord ID to get Admin Access
     ADMIN_UIDS: ["REPLACE_WITH_YOUR_DISCORD_ID"],
-
     MAPS: ["Ascent", "Bind", "Haven", "Lotus", "Pearl", "Split", "Sunset", "Abyss"],
     DAYS: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
     WEBHOOK: "https://discord.com/api/webhooks/1427426922228351042/lqw36ZxOPEnC3qK45b3vnqZvbkaYhzIxqb-uS1tex6CGOvmLYs19OwKZvslOVABdpHnD"
 };
 
-// --- 2. GLOBAL VARIABLES ---
+// --- 2. GLOBAL STATE ---
 let db, auth, currentUser;
 let canvas, ctx, currentTool = 'draw', activeAgent = null, isDrawing = false;
 let currentEnemyId = null, currentRosterId = null, compSlotIndex = null;
@@ -31,9 +29,11 @@ let tempLineupX = 0, tempLineupY = 0, currentLineupId = null;
 
 // --- 3. CORE FUNCTIONS ---
 
-// >> LANDING PAGE
+// >> LANDING PAGE (Root Level Data)
 function loadLandingData() {
     console.log("Loading Landing Data...");
+
+    // Events (Root)
     db.collection("events").orderBy("date").onSnapshot(snap => {
         const div = document.getElementById('landing-matches');
         if (div) {
@@ -56,6 +56,7 @@ function loadLandingData() {
         }
     });
 
+    // Roster (Root)
     db.collection("roster").onSnapshot(snap => {
         const div = document.getElementById('landing-roster');
         if (div) {
@@ -107,22 +108,28 @@ function handleHubAuth(user) {
     });
 }
 
-// >> AUTO-FIXER (Creates Root Collections if missing)
+// >> DATABASE AUTO-FIXER
 async function initializeDatabase() {
     const check = await db.collection("general").doc("captain_message").get();
     if (!check.exists) {
-        console.log("⚠️ Root Database Missing. Initializing...");
+        console.log("⚠️ Initializing Database...");
         const batch = db.batch();
         batch.set(db.collection("general").doc("captain_message"), { text: "Welcome to Syrix." });
-        batch.set(db.collection("general").doc("veto"), {});
         batch.set(db.collection("roster").doc("Operator"), { role: "Captain", rank: "Radiant", uid: currentUser.uid, pfp: "" });
+
+        // Initialize Map Folders
+        CONSTANTS.MAPS.forEach(map => {
+            batch.set(db.collection("comps").doc(map), { agents: [null, null, null, null, null] });
+            batch.set(db.collection("playbooks").doc(map), { attack: "", defense: "" });
+        });
+
         await batch.commit();
-        console.log("✅ Root Structure Created.");
+        console.log("✅ Database Structure Created.");
         window.location.reload();
     }
 }
 
-// >> API
+// >> ASSETS API
 async function fetchAgents() {
     try {
         const res = await fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true');
@@ -160,7 +167,9 @@ window.setTab = (id, btn) => {
     if (id === 'stratbook' && canvas) { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
 };
 
-// MODULES
+// --- MODULES ---
+
+// DASHBOARD
 function loadCaptainMsg() { db.collection("general").doc("captain_message").onSnapshot(d => { if (d.exists) document.getElementById('capt-msg').innerText = `"${d.data().text}"`; }); }
 window.editMsg = () => document.getElementById('capt-edit').style.display = 'block';
 window.saveMsg = () => { db.collection("general").doc("captain_message").set({ text: document.getElementById('capt-input').value }, { merge: true }); document.getElementById('capt-edit').style.display = 'none'; };
@@ -196,6 +205,7 @@ window.saveAvail = () => {
     }, { merge: true }).then(() => alert("Added"));
 };
 
+// STRATBOOK (Nested inside 'strats/[MapName]/drawings')
 function initStratbook() {
     canvas = document.getElementById('vpCanvas'); if (!canvas) return; ctx = canvas.getContext('2d');
     canvas.onmousedown = e => { if (currentTool === 'draw') { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); } else if (activeAgent) { const i = new Image(); i.src = activeAgent; i.crossOrigin = "anonymous"; i.onload = () => ctx.drawImage(i, e.offsetX - 15, e.offsetY - 15, 30, 30); } };
@@ -205,8 +215,17 @@ function initStratbook() {
 window.prepAgent = u => { activeAgent = u; currentTool = 'agent'; };
 window.clearStrat = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 window.changeMap = () => { document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`; window.clearStrat(); };
-window.saveStrat = () => db.collection("strats").add({ author: currentUser.displayName, map: document.getElementById('vpMapSelect').value, img: canvas.toDataURL(), date: new Date().toISOString() }).then(() => alert("Saved"));
+window.saveStrat = () => {
+    const map = document.getElementById('vpMapSelect').value;
+    // Save to NESTED collection: strats -> [Map] -> drawings -> [AutoID]
+    db.collection("strats").doc(map).collection("drawings").add({
+        author: currentUser.displayName,
+        img: canvas.toDataURL(),
+        date: new Date().toISOString()
+    }).then(() => alert("Strat Saved"));
+};
 
+// COMPS (Document ID = Map Name)
 window.loadComp = () => {
     db.collection("comps").doc(document.getElementById('comp-map').value).get().then(d => {
         const ag = d.exists ? d.data().agents : [null, null, null, null, null];
@@ -218,23 +237,45 @@ window.editComp = i => { compSlotIndex = i; document.getElementById('comp-picker
 window.setCompSlot = u => { document.getElementById(`cs-${compSlotIndex}`).dataset.img = u; document.getElementById(`cs-${compSlotIndex}`).innerHTML = `<img src="${u}">`; document.getElementById('comp-picker').style.display = 'none'; };
 window.saveComp = () => { const a = []; for (let i = 0; i < 5; i++) a.push(document.getElementById(`cs-${i}`).dataset.img); db.collection("comps").doc(document.getElementById('comp-map').value).set({ agents: a }).then(() => alert("Saved")); };
 
+// LINEUPS (Nested inside 'lineups/[MapName]/items')
 window.changeLineupMap = () => {
-    const m = document.getElementById('luMapSelect').value;
+    const map = document.getElementById('luMapSelect').value;
     document.getElementById('luMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`;
-    db.collection("lineups").where("map", "==", m).onSnapshot(s => {
+
+    // NESTED READ
+    db.collection("lineups").doc(map).collection("items").onSnapshot(s => {
         const c = document.getElementById('lineup-pins'); c.innerHTML = "";
-        s.forEach(d => { const p = document.createElement('div'); p.className = "pin"; p.style.left = `${d.data().x}%`; p.style.top = `${d.data().y}%`; p.onclick = e => { e.stopPropagation(); window.viewLineup(d.id, d.data()); }; c.appendChild(p); });
+        s.forEach(d => {
+            const p = document.createElement('div'); p.className = "pin";
+            p.style.left = `${d.data().x}%`; p.style.top = `${d.data().y}%`;
+            p.onclick = e => { e.stopPropagation(); window.viewLineup(d.id, d.data()); };
+            c.appendChild(p);
+        });
     });
 };
 window.mapClickLineup = e => { const r = document.getElementById('lu-map-wrap').getBoundingClientRect(); tempLineupX = ((e.clientX - r.left) / r.width) * 100; tempLineupY = ((e.clientY - r.top) / r.height) * 100; document.getElementById('lineup-form').style.display = 'block'; document.getElementById('lineup-viewer').style.display = 'none'; };
-window.saveLineup = () => db.collection("lineups").add({ map: document.getElementById('luMapSelect').value, x: tempLineupX, y: tempLineupY, title: document.getElementById('lu-title').value, url: document.getElementById('lu-url').value, desc: document.getElementById('lu-desc').value }).then(() => { document.getElementById('lineup-form').style.display = 'none'; alert("Saved"); });
+window.saveLineup = () => {
+    const map = document.getElementById('luMapSelect').value;
+    // NESTED WRITE
+    db.collection("lineups").doc(map).collection("items").add({
+        x: tempLineupX, y: tempLineupY,
+        title: document.getElementById('lu-title').value,
+        url: document.getElementById('lu-url').value,
+        desc: document.getElementById('lu-desc').value
+    }).then(() => { document.getElementById('lineup-form').style.display = 'none'; alert("Saved"); });
+};
 window.viewLineup = (id, d) => { currentLineupId = id; document.getElementById('lineup-form').style.display = 'none'; document.getElementById('lineup-viewer').style.display = 'block'; document.getElementById('view-lu-title').innerText = d.title; document.getElementById('view-lu-link').href = d.url; document.getElementById('view-lu-desc').innerText = d.desc; };
-window.deleteLineup = () => { if (confirm("Delete?")) db.collection("lineups").doc(currentLineupId).delete().then(() => document.getElementById('lineup-viewer').style.display = 'none'); };
+window.deleteLineup = () => {
+    const map = document.getElementById('luMapSelect').value;
+    if (confirm("Delete?")) db.collection("lineups").doc(map).collection("items").doc(currentLineupId).delete().then(() => document.getElementById('lineup-viewer').style.display = 'none');
+};
 
+// VETO
 function loadMapVeto() { db.collection("general").doc("veto").onSnapshot(d => { const data = d.data() || {}; document.getElementById('veto-grid').innerHTML = CONSTANTS.MAPS.map(m => `<div class="veto-card ${data[m] || 'neutral'}" onclick="window.togVeto('${m}','${data[m] || 'neutral'}')" style="background-image:url('https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/splash.png')"><div class="veto-overlay"><div>${m}</div><small>${data[m] || ''}</small></div></div>`).join(''); }); }
 window.togVeto = (m, s) => db.collection("general").doc("veto").set({ [m]: s === 'neutral' ? 'ban' : s === 'ban' ? 'pick' : 'neutral' }, { merge: true });
 window.resetVeto = () => db.collection("general").doc("veto").set({});
 
+// MATCHES
 function loadHubMatches() {
     db.collection("events").orderBy("date", "desc").onSnapshot(s => {
         document.getElementById('match-list').innerHTML = ""; let w = 0, t = 0;
@@ -245,26 +286,43 @@ function loadHubMatches() {
 window.addMatch = () => { const res = document.getElementById('m-us').value; db.collection("events").add({ opponent: document.getElementById('m-opp').value, date: document.getElementById('m-date').value, map: document.getElementById('m-map').value, result: res ? { us: res, them: document.getElementById('m-them').value } : null }).then(() => alert("Logged")); };
 window.delMatch = id => { if (confirm("Delete?")) db.collection("events").doc(id).delete(); };
 
+// WAR ROOM
 function loadEnemies() { db.collection("war_room").onSnapshot(s => { document.getElementById('enemy-list').innerHTML = ""; s.forEach(d => document.getElementById('enemy-list').innerHTML += `<div class="list-item" onclick="window.openEnemy('${d.id}')" style="cursor:pointer"><b>${d.data().name}</b></div>`); }); }
 window.newEnemy = () => { const n = prompt("Name:"); if (n) db.collection("war_room").add({ name: n, notes: "" }); };
 window.openEnemy = id => { currentEnemyId = id; db.collection("war_room").doc(id).get().then(d => { document.getElementById('wr-title').innerText = d.data().name; document.getElementById('wr-notes').value = d.data().notes; document.getElementById('wr-content').style.display = 'flex'; }); };
 window.saveIntel = () => db.collection("war_room").doc(currentEnemyId).update({ notes: document.getElementById('wr-notes').value }).then(() => alert("Saved"));
 window.deleteEnemy = () => db.collection("war_room").doc(currentEnemyId).delete().then(() => document.getElementById('wr-content').style.display = 'none');
 
+// ROSTER
 function loadRosterList() { db.collection("roster").onSnapshot(s => { document.getElementById('roster-list-mgr').innerHTML = ""; s.forEach(d => document.getElementById('roster-list-mgr').innerHTML += `<div class="list-item" onclick="window.editRoster('${d.id}')" style="cursor:pointer;">${d.id} <span class="badge">${d.data().role}</span></div>`); }); }
 window.editRoster = id => { currentRosterId = id; document.getElementById('r-id').value = id; document.getElementById('roster-editor').style.display = 'block'; };
 window.saveProfile = () => db.collection("roster").doc(currentRosterId).update({ role: document.getElementById('r-role').value, pfp: document.getElementById('r-pfp').value }).then(() => alert("Updated"));
 
+// ADMIN
 function loadApps() { db.collection("applications").onSnapshot(s => { document.getElementById('admin-list').innerHTML = ""; s.forEach(d => document.getElementById('admin-list').innerHTML += `<div class="list-item" style="flex-direction:column; align-items:flex-start;"><div><b>${d.data().user}</b></div><i>"${d.data().why}"</i><div style="width:100%; display:flex; gap:5px;"><button class="btn primary" style="background:green" onclick="window.decideApp('${d.id}','${d.data().user}','${d.data().uid}',true)">ACCEPT</button><button class="btn primary" style="background:red" onclick="window.decideApp('${d.id}',null,null,false)">REJECT</button></div></div>`); }); }
 window.decideApp = (id, user, uid, accept) => { if (accept) db.collection("roster").doc(user).set({ uid, role: "Tryout", rank: "Unranked" }).then(() => db.collection("applications").doc(id).delete()); else if (confirm("Reject?")) db.collection("applications").doc(id).delete(); };
 
+// PARTNERS & CONTENT
 function loadPartners() { db.collection("partners").onSnapshot(s => { const el = document.getElementById('partner-list'); if (el) { el.innerHTML = ""; s.forEach(d => el.innerHTML += `<div class="list-item"><b>${d.data().name}</b> <small>${d.data().contact}</small></div>`); } }); }
 window.addPartner = () => db.collection("partners").add({ name: document.getElementById('pt-name').value, contact: document.getElementById('pt-contact').value });
 window.addNews = () => db.collection("news").add({ title: document.getElementById('news-title').value, body: document.getElementById('news-body').value }).then(() => alert("Posted"));
 window.addIntel = () => db.collection("intel").add({ title: document.getElementById('intel-title').value, url: document.getElementById('intel-url').value }).then(() => alert("Added"));
 
-window.loadPlaybook = () => { db.collection("playbooks").doc(`${document.getElementById('pb-map').value}_${document.getElementById('pb-side').value}`).get().then(d => document.getElementById('pb-text').value = d.exists ? d.data().text : ""); };
-window.savePlaybook = () => { db.collection("playbooks").doc(`${document.getElementById('pb-map').value}_${document.getElementById('pb-side').value}`).set({ text: document.getElementById('pb-text').value }).then(() => alert("Saved")); };
+// PLAYBOOK (Document ID = Map Name, Fields = Sides)
+window.loadPlaybook = () => {
+    const map = document.getElementById('pb-map').value;
+    const side = document.getElementById('pb-side').value.toLowerCase(); // 'attack' or 'defense'
+    db.collection("playbooks").doc(map).get().then(d => {
+        // Read specific field (attack/defense) from the Map Doc
+        document.getElementById('pb-text').value = d.exists && d.data()[side] ? d.data()[side] : "";
+    });
+};
+window.savePlaybook = () => {
+    const map = document.getElementById('pb-map').value;
+    const side = document.getElementById('pb-side').value.toLowerCase();
+    // Save to specific field using merge
+    db.collection("playbooks").doc(map).set({ [side]: document.getElementById('pb-text').value }, { merge: true }).then(() => alert("Saved"));
+};
 
 // --- 5. INITIALIZATION SEQUENCE ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -272,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         auth = firebase.auth();
-        console.log("Firebase Connected to Root.");
+        console.log("Firebase Connected (Deep Structure).");
 
         const loader = document.getElementById('system-loader');
         if (loader) loader.style.display = 'none';
