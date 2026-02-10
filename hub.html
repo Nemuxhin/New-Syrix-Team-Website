@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SYRIX // Command Center</title>
     <link rel="stylesheet" href="assets/css/styles.css">
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body class="dashboard-root">
-
-    <div id="hubLocked" class="hubWrap" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
-        <div class="card" style="text-align: center; max-width: 400px; width: 100%;">
+    <div id="hubLocked" class="hubWrap auth-screen">
+        <div class="card" style="text-align: center; max-width: 400px;">
             <h2 style="letter-spacing: 5px; margin-bottom: 25px; color: var(--red);">SYRIX_PROTOCOL</h2>
             <button class="btn primary" style="width: 100%;" onclick="window.loginWithDiscord()">AUTHENTICATE_SESSION</button>
         </div>
@@ -21,19 +19,17 @@
 
     <div id="hubUnlocked" style="display: none;">
         <header class="dash-nav">
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <button class="logout-pill" style="padding: 5px 12px; border-radius: 4px;" onclick="window.location.href='index.html'">←</button>
+            <div class="nav-left">
+                <button class="back-btn" onclick="window.location.href='index.html'">←</button>
                 <div class="logo">SYRIX <span>HUB</span></div>
             </div>
-
             <nav class="horizontal-tabs">
                 <button class="tab-link active" onclick="window.showTab('planner', this)">STRATBOOK</button>
                 <button class="tab-link" onclick="window.showTab('roster', this)">ROSTER</button>
                 <button class="tab-link" onclick="window.showTab('warroom', this)">WAR ROOM</button>
             </nav>
-
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <div id="userProfile" style="font-size: 0.7rem; font-weight: 900; color: var(--text-muted);">OPERATOR</div>
+            <div class="nav-right">
+                <div id="userProfile" class="user-pill">OPERATOR</div>
                 <button class="logout-pill" onclick="firebase.auth().signOut()">LOG OUT</button>
             </div>
         </header>
@@ -42,18 +38,17 @@
             <div id="planner" class="tabView active">
                 <div class="stratbook-container">
                     <div class="strat-main">
-                        <div class="canvas-wrapper">
+                        <div class="canvas-wrapper card">
                             <canvas id="vpCanvas"></canvas>
                             <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png">
                         </div>
-                        <div class="canvas-toolbar">
+                        <div class="canvas-toolbar card">
                             <button onclick="window.setTool('draw')" id="tool-draw" class="tool active">✎</button>
                             <button onclick="window.setTool('agent')" id="tool-agent" class="tool">👤</button>
                             <button onclick="window.clearPlanner()" class="tool danger">🗑</button>
-                            <input type="color" id="vpColor" value="#ff1e3c" style="width: 40px; height: 48px; border: none; background: none;">
+                            <input type="color" id="vpColor" value="#ff1e3c">
                         </div>
                     </div>
-
                     <div class="strat-side">
                         <div class="card" style="margin-bottom: 20px;">
                             <label class="tag">ACTIVE_THEATER</label>
@@ -66,31 +61,27 @@
                         </div>
                         <div class="card">
                             <label class="tag">UNIT_DEPLOYMENT</label>
-                            <div id="agent-list" class="agent-grid">
-                            </div>
+                            <div id="agent-list" class="agent-grid"></div>
                         </div>
-                        <button class="btn primary" style="width: 100%; margin-top: 20px;" onclick="window.saveStrategy()">EXPORT STRAT</button>
                     </div>
                 </div>
             </div>
 
             <div id="roster" class="tabView">
                 <div class="card" style="max-width: 900px; margin: 0 auto;">
-                    <h3 class="tag" style="margin-bottom: 20px;">ACTIVE_OPERATIVES</h3>
-                    <div id="rosList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
-                    </div>
+                    <h3 class="tag">ACTIVE_OPERATIVES</h3>
+                    <div id="rosList" class="roster-list-grid"></div>
                 </div>
             </div>
 
             <div id="warroom" class="tabView">
                 <div class="card" style="max-width: 900px; margin: 0 auto;">
-                    <h3 class="tag">INTEL_FEED</h3>
-                    <p style="margin-top: 20px; color: var(--text-muted);">Awaiting mission briefing...</p>
+                    <h3 class="tag">MISSION_BRIEFING</h3>
+                    <p style="margin-top:20px; color:var(--text-muted);">Awaiting Intelligence Upload...</p>
                 </div>
             </div>
         </main>
     </div>
-
     <script src="assets/js/script.js"></script>
 </body>
 </html>
