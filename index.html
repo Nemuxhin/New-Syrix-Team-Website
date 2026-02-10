@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SYRIX — Built Under Pressure</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">SYRIX</div>
+        <ul>
+            <li><a href="#teams">Teams</a></li>
+            <li><a href="#news">News</a></li>
+            <li><a href="#shop">Shop</a></li>
+            <li><a href="hub.html">Hub</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-video-wrap">
+            <iframe class="hero-yt" src="https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1&mute=1&controls=0&rel=0&loop=1&playlist=y9zweO_hU1U" frameborder="0"></iframe>
+        </div>
+        <div class="heroContent reveal">
+            <h1>BUILT UNDER<br>PRESSURE</h1>
+            <p>SYRIX is a Valorant-first organisation built on discipline, systems, and execution.</p>
+            <div class="heroActions">
+                <button class="btn primary" id="btnWatch">Watch</button>
+                <button class="btn ghost" onclick="window.location.href='https://discord.gg/HWbJr8sCse'">Join</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="live-stats" class="reveal">
+        <div class="stats-bar">
+            <div class="stat-item">
+                <small>Record</small>
+                <div id="stat-record">0W - 0L</div>
+            </div>
+            <div class="stat-item">
+                <small>Win Rate</small>
+                <div id="stat-winrate">0%</div>
+            </div>
+            <div class="stat-item">
+                <small>Unit Strength</small>
+                <div id="stat-roster">0 Players</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="teams">
+        <h2 class="sectionTitle reveal">Units</h2>
+        <div class="featureGrid reveal">
+            <div class="feature">
+                <img src="https://images.unsplash.com/photo-1605902711622-cfb43c44367f" alt="Valorant">
+                <span>VALORANT PREMIER</span>
+            </div>
+            <div class="feature"><span>REDACTED</span></div>
+            <div class="feature"><span>REDACTED</span></div>
+        </div>
+    </section>
+
+    <section id="news">
+        <h2 class="sectionTitle reveal">Latest Sitrep</h2>
+        <div class="newsGrid reveal" id="live-news-feed">
+            <div class="newsMain"><h3>Connecting to HQ...</h3></div>
+        </div>
+    </section>
+
+    <footer>
+        <span>© 2026 SYRIX ESPORTS</span>
+        <span>BLACK • RED • VALORANT</span>
+    </footer>
+
+    <div class="modal" id="modal">
+        <div class="modalBackdrop" id="modalBackdrop"></div>
+        <div class="modalCard">
+            <div class="modalTop">
+                <strong>SYRIX // ARCHIVE_01</strong>
+                <button class="modalClose" id="modalClose">✕</button>
+            </div>
+            <div class="modalFrame"><iframe id="trailerFrame" src="" frameborder="0" allow="autoplay; fullscreen"></iframe></div>
+        </div>
+    </div>
+
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
