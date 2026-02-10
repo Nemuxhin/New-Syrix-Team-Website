@@ -133,19 +133,47 @@ window.loginDiscord = () => auth.signInWithPopup(new firebase.auth.OAuthProvider
 window.submitApp = () => {
     const ign = document.getElementById('app-ign').value;
     const why = document.getElementById('app-why').value;
+    const rank = document.getElementById('app-rank').value;
+    const role = document.getElementById('app-role').value;
+    const tracker = document.getElementById('app-tracker').value;
+
     if (!ign || !why) return alert("Required fields missing");
 
+    // 1. Save to Firebase
     db.collection("applications").add({
         user: ign,
         uid: currentUser.uid,
-        rank: document.getElementById('app-rank').value,
-        role: document.getElementById('app-role').value,
-        tracker: document.getElementById('app-tracker').value,
+        rank: rank,
+        role: role,
+        tracker: tracker,
         why: why,
         date: new Date().toISOString()
-    }).then(() => alert("Application Submitted"));
-};
+    }).then(() => {
+        // 2. Send to Discord Webhook
+        const webhookURL = "https://discord.com/api/webhooks/1427426922228351042/lqw36ZxOPEnC3qK45b3vnqZvbkaYhzIxqb-uS1tex6CGOvmLYs19OwKZvslOVABdpHnD";
 
+        const payload = {
+            embeds: [{
+                title: `New Application: ${ign}`,
+                color: 16776960, // Yellow
+                fields: [
+                    { name: 'Rank', value: rank, inline: true },
+                    { name: 'Role', value: role, inline: true },
+                    { name: 'Tracker', value: tracker }
+                ]
+            }]
+        };
+
+        fetch(webhookURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(err => console.error("Discord Webhook Failed", err));
+
+        alert("Application Submitted successfully.");
+        document.getElementById('app-form').style.display = 'none';
+    });
+};
 // --- NAVIGATION ---
 window.setTab = (id, btn) => {
     document.querySelectorAll('.tabView').forEach(e => e.classList.remove('active'));
