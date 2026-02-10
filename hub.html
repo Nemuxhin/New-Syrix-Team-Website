@@ -13,7 +13,7 @@
 </head>
 <body class="dashboard-root" id="page-hub">
 
-    <div id="system-loader" style="position:fixed; inset:0; background:#000; z-index:10000; display:flex; align-items:center; justify-content:center; color:#fff; font-family:monospace;">
+    <div id="system-loader" style="position:fixed; inset:0; background:#000; z-index:10000; display:flex; align-items:center; justify-content:center; color:#fff; font-family:monospace; font-size:1.5rem;">
         SYSTEM INITIALIZING...
     </div>
 
@@ -23,7 +23,7 @@
             <p id="auth-status" style="margin-bottom:30px; color:#666; font-weight:bold; letter-spacing:2px;">SECURE CONNECTION REQUIRED</p>
 
             <div id="login-module">
-                <button class="btn primary" onclick="window.AuthSystem.login()">LOGIN WITH DISCORD</button>
+                <button class="btn primary" onclick="window.loginDiscord()"><i class="fa-brands fa-discord"></i> AUTHENTICATE</button>
                 <button class="btn ghost" style="margin-top:10px;" onclick="window.location.href='index.html'">ABORT</button>
             </div>
 
@@ -50,7 +50,7 @@
                 </div>
                 <input id="app-tracker" class="dash-input" placeholder="Tracker.gg URL">
                 <textarea id="app-why" class="dash-textarea" rows="3" placeholder="Why do you want to join?"></textarea>
-                <button class="btn primary" onclick="window.AuthSystem.submitApplication()">TRANSMIT APPLICATION</button>
+                <button class="btn primary" onclick="window.submitApp()">TRANSMIT APPLICATION</button>
             </div>
         </div>
     </div>
@@ -73,18 +73,18 @@
             </div>
             <div class="header-bottom">
                 <nav class="scroll-nav">
-                    <button class="nav-pill active" onclick="window.Navigation.setTab('dashboard', this)">DASHBOARD</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('matches', this)">OPS</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('stratbook', this)">STRATBOOK</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('comps', this)">COMPS</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('warroom', this)">WAR ROOM</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('lineups', this)">LINEUPS</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('roster', this)">ROSTER</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('mapveto', this)">VETO</button>
-                    <button class="nav-pill" onclick="window.Navigation.setTab('playbook', this)">PLAYBOOK</button>
-                    <button class="nav-pill admin-only" onclick="window.Navigation.setTab('partners', this)" style="display:none; border-color:var(--red);">PARTNERS</button>
-                    <button class="nav-pill admin-only" onclick="window.Navigation.setTab('content', this)" style="display:none; border-color:var(--red);">CONTENT</button>
-                    <button class="nav-pill admin-only" onclick="window.Navigation.setTab('admin', this)" style="display:none; border-color:var(--red);">ADMIN</button>
+                    <button class="nav-pill active" onclick="window.setTab('dashboard', this)">DASHBOARD</button>
+                    <button class="nav-pill" onclick="window.setTab('matches', this)">OPS</button>
+                    <button class="nav-pill" onclick="window.setTab('stratbook', this)">STRATBOOK</button>
+                    <button class="nav-pill" onclick="window.setTab('comps', this)">COMPS</button>
+                    <button class="nav-pill" onclick="window.setTab('warroom', this)">WAR ROOM</button>
+                    <button class="nav-pill" onclick="window.setTab('lineups', this)">LINEUPS</button>
+                    <button class="nav-pill" onclick="window.setTab('roster', this)">ROSTER</button>
+                    <button class="nav-pill" onclick="window.setTab('mapveto', this)">VETO</button>
+                    <button class="nav-pill" onclick="window.setTab('playbook', this)">PLAYBOOK</button>
+                    <button class="nav-pill admin-only" onclick="window.setTab('partners', this)" style="display:none; border-color:var(--red);">PARTNERS</button>
+                    <button class="nav-pill admin-only" onclick="window.setTab('content', this)" style="display:none; border-color:var(--red);">CONTENT</button>
+                    <button class="nav-pill admin-only" onclick="window.setTab('admin', this)" style="display:none; border-color:var(--red);">ADMIN</button>
                 </nav>
             </div>
         </header>
@@ -95,11 +95,11 @@
                 <div class="dashboard-grid">
                     <div class="col-left">
                         <div class="card message-card">
-                            <div class="card-head"><h3 class="tag">CAPTAIN'S MESSAGE</h3><button class="btn-xs" onclick="window.DashboardModule.toggleEditMsg()">EDIT</button></div>
+                            <div class="card-head"><h3 class="tag">CAPTAIN'S MESSAGE</h3><button class="btn-xs" onclick="window.editMsg()">EDIT</button></div>
                             <p id="capt-msg" class="message-body">Loading transmission...</p>
                             <div id="capt-edit" style="display:none; margin-top:10px;">
                                 <textarea id="capt-input" class="dash-textarea" rows="4"></textarea>
-                                <button class="btn primary" onclick="window.DashboardModule.saveMsg()" style="margin-top:5px;">UPDATE TRANSMISSION</button>
+                                <button class="btn primary" onclick="window.saveMsg()" style="margin-top:5px;">UPDATE TRANSMISSION</button>
                             </div>
                         </div>
                         <div class="card">
@@ -112,7 +112,7 @@
                                     <input type="time" id="av-start" class="dash-input" value="18:00">
                                     <input type="time" id="av-end" class="dash-input" value="22:00">
                                 </div>
-                                <button class="btn ghost" onclick="window.DashboardModule.saveAvail()">ADD SLOT</button>
+                                <button class="btn ghost" onclick="window.saveAvail()">ADD SLOT</button>
                             </div>
                         </div>
                     </div>
@@ -124,7 +124,7 @@
                     </div>
                     <div class="col-right">
                         <div class="card" style="text-align:center;"><h3 class="tag">WIN RATE</h3><div id="stat-win" class="big-num">--%</div></div>
-                        <div class="card"><h3 class="tag">ABSENCE LOGGER</h3><div style="display:flex; gap:5px;"><input type="date" id="abs-start" class="dash-input"><input type="date" id="abs-end" class="dash-input"></div><input id="abs-reason" class="dash-input" placeholder="Reason"><button class="btn ghost" onclick="window.DashboardModule.logAbsence()">LOG ABSENCE</button><div id="abs-list" class="list-container small-list" style="margin-top:15px;"></div></div>
+                        <div class="card"><h3 class="tag">ABSENCE LOGGER</h3><div style="display:flex; gap:5px;"><input type="date" id="abs-start" class="dash-input"><input type="date" id="abs-end" class="dash-input"></div><input id="abs-reason" class="dash-input" placeholder="Reason"><button class="btn ghost" onclick="window.logAbsence()">LOG ABSENCE</button><div id="abs-list" class="list-container small-list" style="margin-top:15px;"></div></div>
                     </div>
                 </div>
             </div>
@@ -134,16 +134,16 @@
                     <div class="canvas-wrap">
                         <canvas id="vpCanvas"></canvas><img id="vpMapImg" src="">
                         <div class="canvas-tools">
-                            <button class="tool-icon active" onclick="window.StratbookModule.setTool('draw', this)">✏️</button>
-                            <button class="tool-icon" onclick="window.StratbookModule.setTool('agent', this)">👤</button>
+                            <button class="tool-icon active" onclick="window.tool='draw'">✏️</button>
+                            <button class="tool-icon" onclick="window.tool='agent'">👤</button>
                             <input type="color" id="vpColor" value="#ff1e3c" style="width:30px; border:none; background:none;">
-                            <button class="tool-icon" onclick="window.StratbookModule.saveStrat()">💾</button>
-                            <button class="tool-icon" style="color:red;" onclick="window.StratbookModule.clear()">🗑</button>
+                            <button class="tool-icon" onclick="window.saveStrat()">💾</button>
+                            <button class="tool-icon" style="color:red;" onclick="window.clearStrat()">🗑</button>
                         </div>
                     </div>
                     <div class="card">
                         <label class="tag">THEATER SELECTION</label>
-                        <select id="vpMapSelect" class="dash-select" onchange="window.StratbookModule.changeMap()"><option value="ascent">ASCENT</option><option value="bind">BIND</option><option value="haven">HAVEN</option><option value="lotus">LOTUS</option><option value="pearl">PEARL</option><option value="split">SPLIT</option><option value="sunset">SUNSET</option><option value="abyss">ABYSS</option></select>
+                        <select id="vpMapSelect" class="dash-select" onchange="window.changeMap()"><option value="ascent">ASCENT</option><option value="bind">BIND</option><option value="haven">HAVEN</option><option value="lotus">LOTUS</option><option value="pearl">PEARL</option><option value="split">SPLIT</option><option value="sunset">SUNSET</option><option value="abyss">ABYSS</option></select>
                         <label class="tag" style="margin-top:20px;">ASSET LIBRARY</label>
                         <div id="agent-palette" class="agent-grid"></div>
                     </div>
@@ -154,15 +154,15 @@
                 <div class="split-panel">
                     <div class="card">
                         <h3 class="tag">AGENT SELECTOR</h3>
-                        <select id="comp-map" class="dash-select" onchange="window.CompsModule.loadComp()"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
+                        <select id="comp-map" class="dash-select" onchange="window.loadComp()"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
                         <div class="comp-grid">
-                            <div id="cs-0" class="comp-slot" onclick="window.CompsModule.editSlot(0)">?</div>
-                            <div id="cs-1" class="comp-slot" onclick="window.CompsModule.editSlot(1)">?</div>
-                            <div id="cs-2" class="comp-slot" onclick="window.CompsModule.editSlot(2)">?</div>
-                            <div id="cs-3" class="comp-slot" onclick="window.CompsModule.editSlot(3)">?</div>
-                            <div id="cs-4" class="comp-slot" onclick="window.CompsModule.editSlot(4)">?</div>
+                            <div id="cs-0" class="comp-slot" onclick="window.editComp(0)">?</div>
+                            <div id="cs-1" class="comp-slot" onclick="window.editComp(1)">?</div>
+                            <div id="cs-2" class="comp-slot" onclick="window.editComp(2)">?</div>
+                            <div id="cs-3" class="comp-slot" onclick="window.editComp(3)">?</div>
+                            <div id="cs-4" class="comp-slot" onclick="window.editComp(4)">?</div>
                         </div>
-                        <button class="btn primary" onclick="window.CompsModule.saveComp()">SAVE CONFIGURATION</button>
+                        <button class="btn primary" onclick="window.saveComp()">SAVE CONFIGURATION</button>
                         <div id="comp-picker" style="display:none; margin-top:20px; border-top:1px solid #333; padding-top:10px;">
                             <h3 class="tag">SELECT AGENT</h3>
                             <div id="comp-agent-list" class="agent-grid"></div>
@@ -183,12 +183,7 @@
                         <div style="display:flex; gap:10px;"><input type="number" id="m-us" class="dash-input" placeholder="Us"><input type="number" id="m-them" class="dash-input" placeholder="Them"></div>
                         <input type="date" id="m-date" class="dash-input">
                         <select id="m-map" class="dash-select"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
-                            <input id="m-pistol" class="dash-input" placeholder="Pistols Won">
-                            <input id="m-eco" class="dash-input" placeholder="Ecos Won">
-                            <input id="m-fb" class="dash-input" placeholder="FB %">
-                        </div>
-                        <button class="btn primary" onclick="window.MatchesModule.addMatch()">LOG RECORD</button>
+                        <button class="btn primary" onclick="window.addMatch()">LOG RECORD</button>
                     </div>
                     <div class="card"><h3 class="tag">MISSION HISTORY</h3><div id="match-list" class="list-container"></div></div>
                 </div>
@@ -198,16 +193,16 @@
                 <div class="split-panel">
                     <div class="card">
                         <h3 class="tag">TARGET LIST</h3>
-                        <button class="btn ghost" onclick="window.WarRoomModule.newEnemy()">+ NEW TARGET</button>
+                        <button class="btn ghost" onclick="window.newEnemy()">+ NEW TARGET</button>
                         <div id="enemy-list" class="list-container" style="margin-top:15px;"></div>
                     </div>
                     <div class="card">
                         <h3 class="tag" id="wr-title">SELECT TARGET</h3>
                         <div id="wr-content" style="display:none; height:100%; flex-direction:column;">
-                            <textarea id="wr-notes" class="dash-textarea" style="flex:1;" placeholder="Enter tactical notes, tendencies, and player info..."></textarea>
+                            <textarea id="wr-notes" class="dash-textarea" style="flex:1;" placeholder="Enter tactical notes..."></textarea>
                             <div style="display:flex; gap:10px; margin-top:10px;">
-                                <button class="btn primary" onclick="window.WarRoomModule.saveIntel()">UPDATE INTEL</button>
-                                <button class="btn danger" onclick="window.WarRoomModule.deleteEnemy()">DELETE TARGET</button>
+                                <button class="btn primary" onclick="window.saveIntel()">UPDATE INTEL</button>
+                                <button class="btn danger" onclick="window.deleteEnemy()">DELETE TARGET</button>
                             </div>
                         </div>
                     </div>
@@ -216,25 +211,25 @@
 
             <div id="lineups" class="tabView">
                 <div class="strat-container">
-                    <div class="canvas-wrap" id="lu-map-wrap" onclick="window.LineupsModule.mapClick(event)">
+                    <div class="canvas-wrap" id="lu-map-wrap" onclick="window.mapClickLineup(event)">
                         <img id="luMapImg" src="" style="width:100%; height:100%; object-fit:contain;">
                         <div id="lineup-pins"></div>
                     </div>
                     <div class="card">
                         <label class="tag">MAP</label>
-                        <select id="luMapSelect" class="dash-select" onchange="window.LineupsModule.changeMap()"><option value="ascent">ASCENT</option><option value="bind">BIND</option><option value="haven">HAVEN</option><option value="lotus">LOTUS</option><option value="split">SPLIT</option><option value="sunset">SUNSET</option><option value="abyss">ABYSS</option></select>
+                        <select id="luMapSelect" class="dash-select" onchange="window.changeLineupMap()"><option value="ascent">ASCENT</option><option value="bind">BIND</option><option value="haven">HAVEN</option><option value="lotus">LOTUS</option><option value="split">SPLIT</option><option value="sunset">SUNSET</option><option value="abyss">ABYSS</option></select>
                         <div id="lineup-form" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
                             <label class="tag">NEW PIN DATA</label>
                             <input id="lu-title" class="dash-input" placeholder="Title">
                             <input id="lu-url" class="dash-input" placeholder="Image/Video URL">
                             <textarea id="lu-desc" class="dash-input" placeholder="Description"></textarea>
-                            <button class="btn primary" onclick="window.LineupsModule.save()">SAVE PIN</button>
+                            <button class="btn primary" onclick="window.saveLineup()">SAVE PIN</button>
                         </div>
                         <div id="lineup-viewer" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
                             <h3 id="view-lu-title" style="color:white; margin-bottom:5px;"></h3>
                             <a id="view-lu-link" href="#" target="_blank" style="color:var(--red); font-size:0.8rem; font-weight:bold;">OPEN RESOURCE</a>
                             <p id="view-lu-desc" style="color:#888; font-size:0.9rem; margin-top:10px;"></p>
-                            <button class="btn ghost" onclick="window.LineupsModule.delete()" style="color:red; margin-top:15px;">DELETE PIN</button>
+                            <button class="btn ghost" onclick="window.deleteLineup()" style="color:red; margin-top:15px;">DELETE PIN</button>
                         </div>
                     </div>
                 </div>
@@ -245,12 +240,12 @@
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                         <h3 class="tag">TACTICAL PLAYBOOK</h3>
                         <div style="display:flex; gap:10px;">
-                            <select id="pb-map" class="dash-select" onchange="window.PlaybookModule.load()"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
-                            <select id="pb-side" class="dash-select" onchange="window.PlaybookModule.load()"><option>Attack</option><option>Defense</option></select>
+                            <select id="pb-map" class="dash-select" onchange="window.loadPlaybook()"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
+                            <select id="pb-side" class="dash-select" onchange="window.loadPlaybook()"><option>Attack</option><option>Defense</option></select>
                         </div>
                     </div>
                     <textarea id="pb-text" class="dash-textarea" style="flex:1; font-family:monospace; line-height:1.6;" placeholder="Define protocols, defaults, and execute strategies here..."></textarea>
-                    <button class="btn primary" onclick="window.PlaybookModule.save()" style="margin-top:10px;">SAVE PROTOCOLS</button>
+                    <button class="btn primary" onclick="window.savePlaybook()" style="margin-top:10px;">SAVE PROTOCOLS</button>
                 </div>
             </div>
 
@@ -263,7 +258,7 @@
                             <input id="r-id" class="dash-input" disabled>
                             <select id="r-role" class="dash-select"><option>Captain</option><option>Main</option><option>Sub</option><option>Coach</option></select>
                             <input id="r-pfp" class="dash-input" placeholder="PFP URL">
-                            <button class="btn primary" onclick="window.RosterModule.save()">SAVE CHANGES</button>
+                            <button class="btn primary" onclick="window.saveProfile()">SAVE CHANGES</button>
                         </div>
                     </div>
                 </div>
@@ -271,22 +266,22 @@
 
             <div id="mapveto" class="tabView">
                 <div class="card full-height">
-                    <h3 class="tag">MAP VETO BOARD <button class="btn-xs" style="float:right;" onclick="window.VetoModule.reset()">RESET</button></h3>
+                    <h3 class="tag">MAP VETO BOARD <button class="btn-xs" style="float:right;" onclick="window.resetVeto()">RESET</button></h3>
                     <div id="veto-grid" class="veto-container"></div>
                 </div>
             </div>
 
             <div id="partners" class="tabView">
                 <div class="split-panel">
-                    <div class="card"><h3 class="tag">ADD PARTNER</h3><input id="pt-name" class="dash-input" placeholder="Name"><input id="pt-contact" class="dash-input" placeholder="Contact Info"><button class="btn primary" onclick="window.PartnersModule.add()">ADD ENTRY</button></div>
+                    <div class="card"><h3 class="tag">ADD PARTNER</h3><input id="pt-name" class="dash-input" placeholder="Name"><input id="pt-contact" class="dash-input" placeholder="Contact Info"><button class="btn primary" onclick="window.addPartner()">ADD ENTRY</button></div>
                     <div class="card"><h3 class="tag">DIRECTORY</h3><div id="partner-list" class="list-container"></div></div>
                 </div>
             </div>
 
             <div id="content" class="tabView">
                 <div class="dashboard-grid">
-                    <div class="card"><h3 class="tag">POST NEWS</h3><input id="news-title" class="dash-input" placeholder="Title"><textarea id="news-body" class="dash-input"></textarea><button class="btn primary" onclick="window.ContentModule.addNews()">POST</button></div>
-                    <div class="card"><h3 class="tag">ADD INTEL</h3><input id="intel-title" class="dash-input" placeholder="Title"><input id="intel-url" class="dash-input" placeholder="URL"><button class="btn primary" onclick="window.ContentModule.addIntel()">ADD</button></div>
+                    <div class="card"><h3 class="tag">POST NEWS</h3><input id="news-title" class="dash-input" placeholder="Title"><textarea id="news-body" class="dash-input"></textarea><button class="btn primary" onclick="window.addNews()">POST</button></div>
+                    <div class="card"><h3 class="tag">ADD INTEL</h3><input id="intel-title" class="dash-input" placeholder="Title"><input id="intel-url" class="dash-input" placeholder="URL"><button class="btn primary" onclick="window.addIntel()">ADD</button></div>
                 </div>
             </div>
 
