@@ -1,100 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SYRIX — Built Under Pressure</title>
-    <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-
+    <link rel="stylesheet" href="assets/css/styles.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body id="page-home">
+
     <nav>
         <div class="logo">SYRIX</div>
         <ul class="nav-links">
-            <li><a href="#teams">Roster</a></li>
+            <li><a href="#roster">Roster</a></li>
             <li><a href="#matches">Matches</a></li>
-            <li><a href="#news">Intel</a></li>
             <li><a href="hub.html" class="highlight-link">HUB ACCESS</a></li>
         </ul>
     </nav>
 
-    <section class="hero">
+    <header class="hero">
         <div class="hero-video-wrap">
             <div class="video-overlay"></div>
-            <iframe class="hero-yt"
-                    src="https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1&mute=1&controls=0&rel=0&playsinline=1&modestbranding=1&iv_load_policy=3&loop=1&playlist=y9zweO_hU1U"
-                    frameborder="0"
-                    allow="autoplay; encrypted-media"></iframe>
+            <iframe class="hero-yt" src="https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1&mute=1&controls=0&loop=1&playlist=y9zweO_hU1U&playsinline=1" frameborder="0" allow="autoplay; encrypted-media"></iframe>
         </div>
-        <div class="heroContent reveal">
-            <h1>BUILT UNDER<br>PRESSURE</h1>
+        <div class="heroContent">
+            <h1>Built Under<br><span style="color:var(--red)">Pressure</span></h1>
             <p>SYRIX is a Valorant-first organisation built on discipline, systems, and execution.</p>
             <div class="heroActions">
                 <button class="btn primary" onclick="window.location.href='hub.html'">Apply to Join</button>
-                <button class="btn ghost" onclick="document.getElementById('teams').scrollIntoView()">View Roster</button>
+                <button class="btn ghost" onclick="document.getElementById('roster').scrollIntoView()">View Roster</button>
             </div>
         </div>
-    </section>
+    </header>
 
-    <section id="live-stats" class="reveal">
-        <div class="stats-bar">
-            <div class="stat-item">
-                <small>SEASON RECORD</small>
-                <div id="stat-record">LOADING...</div>
-            </div>
-            <div class="stat-item">
-                <small>WIN RATE</small>
-                <div id="stat-winrate">--%</div>
-            </div>
-            <div class="stat-item">
-                <small>ACTIVE UNITS</small>
-                <div id="stat-roster">--</div>
-            </div>
-        </div>
-    </section>
-
-    <section id="teams" class="container">
-        <h2 class="sectionTitle reveal">Active Roster</h2>
-        <div class="featureGrid reveal" id="landing-roster-grid">
-            <div class="loading-spinner">Loading Database...</div>
+    <section id="roster" class="container">
+        <h2 class="sectionTitle">Active Roster</h2>
+        <div class="featureGrid" id="landing-roster">
+            <div style="color:#888;">Loading Database...</div>
         </div>
     </section>
 
     <section id="matches" class="container">
-        <h2 class="sectionTitle reveal">Mission Log</h2>
-        <div class="newsGrid reveal" id="landing-matches-grid">
-        </div>
-    </section>
-
-    <section id="shop" class="container">
-        <h2 class="sectionTitle reveal">Supply Drop</h2>
-        <div class="shopGrid reveal">
-            <div class="product">
-                <div class="prod-img" style="background-image: url('https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80');"></div>
-                <div class="prod-info">
-                    <h4>Blackout Hoodie</h4>
-                    <span class="price">€69.00</span>
-                </div>
-            </div>
-            <div class="product">
-                <div class="prod-img" style="background-image: url('https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80');"></div>
-                <div class="prod-info">
-                    <h4>Syrix Official Tee</h4>
-                    <span class="price">€35.00</span>
-                </div>
-            </div>
+        <h2 class="sectionTitle">Mission Log</h2>
+        <div class="newsGrid" id="landing-matches">
         </div>
     </section>
 
     <footer>
-        <div class="footer-content">
-            <span>© 2026 SYRIX ESPORTS</span>
-            <span class="accent">BLACK • RED • VALORANT</span>
-        </div>
+        <p>© 2026 SYRIX ESPORTS • BLACK • RED • VALORANT</p>
     </footer>
 
     <script src="assets/js/script.js"></script>

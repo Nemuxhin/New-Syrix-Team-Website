@@ -13,68 +13,44 @@
 </head>
 <body class="dashboard-root" id="page-hub">
 
-    <div id="hubLocked" class="hubWrap auth-screen">
-        <div class="card auth-card">
-            <h2>SYRIX_PROTOCOL</h2>
-            <p id="auth-status-text">RESTRICTED ACCESS. IDENTIFY.</p>
-            <button class="btn primary full-width" onclick="window.loginWithDiscord()">LOGIN WITH DISCORD</button>
-            <button class="btn ghost full-width" onclick="window.location.href='index.html'" style="margin-top: 10px;">RETURN TO BASE</button>
-            <div id="app-form" style="display:none; text-align: left; margin-top: 20px;">
-                <h3 class="tag">ENLISTMENT FORM</h3>
-                <input type="text" id="app-ign" class="dash-input" placeholder="Riot ID (Name#TAG)">
-                <select id="app-rank" class="dash-input">
-                    <option value="Ascendant">Ascendant</option>
-                    <option value="Immortal">Immortal</option>
-                    <option value="Radiant">Radiant</option>
-                </select>
-                <select id="app-role" class="dash-input">
-                    <option value="Duelist">Duelist</option>
-                    <option value="Initiator">Initiator</option>
-                    <option value="Controller">Controller</option>
-                    <option value="Sentinel">Sentinel</option>
-                    <option value="Flex">Flex</option>
-                </select>
-                <input type="text" id="app-tracker" class="dash-input" placeholder="Tracker.gg URL">
-                <textarea id="app-why" class="dash-input" placeholder="Why do you want to join?" rows="3"></textarea>
-                <button class="btn primary full-width" onclick="window.submitApplication()" style="margin-top:15px;">SUBMIT DOSSIER</button>
+    <div id="hubLocked" class="auth-screen">
+        <div class="card auth-box">
+            <h2>SYRIX PROTOCOL</h2>
+            <p id="auth-msg" style="margin-bottom:20px; color:#888;">RESTRICTED AREA</p>
+            <button class="btn primary full-width" onclick="window.loginDiscord()">LOGIN WITH DISCORD</button>
+            <button class="btn ghost full-width" onclick="window.location.href='index.html'" style="margin-top:10px;">EXIT</button>
+
+            <div id="app-form" style="display:none; text-align:left; margin-top:20px; border-top:1px solid #333; padding-top:20px;">
+                <h3 class="tag">ENLISTMENT</h3>
+                <input id="app-ign" class="dash-input" placeholder="Riot ID (Name#TAG)">
+                <input id="app-tracker" class="dash-input" placeholder="Tracker.gg Link">
+                <select id="app-rank" class="dash-input"><option>Ascendant</option><option>Immortal</option><option>Radiant</option></select>
+                <select id="app-role" class="dash-input"><option>Duelist</option><option>Initiator</option><option>Controller</option><option>Sentinel</option><option>Flex</option></select>
+                <textarea id="app-why" class="dash-input" placeholder="Why join?" rows="2"></textarea>
+                <button class="btn primary full-width" onclick="window.submitApp()">SUBMIT APPLICATION</button>
             </div>
         </div>
     </div>
 
-    <div id="hubUnlocked" style="display: none;">
-
+    <div id="hubUnlocked" style="display:none; height:100%;">
         <header class="hub-header">
             <div class="header-top">
-                <div class="nav-left">
-                    <button class="back-icon" onclick="window.location.href='index.html'"><i class="fa-solid fa-arrow-left"></i></button>
-                    <div class="logo">SYRIX <span style="color:var(--red);">HUB</span></div>
-                </div>
-                <div class="nav-right">
-                    <div class="user-info">
-                        <div id="userProfile" class="user-name">OPERATOR</div>
-                        <button class="logout-btn" onclick="firebase.auth().signOut()">LOG OUT</button>
-                    </div>
-                    <select id="timezone-select" class="dash-select small">
-                        <option value="UTC">UTC</option>
-                        <option value="Europe/London">London</option>
-                        <option value="Europe/Paris">Paris</option>
-                        <option value="America/New_York">New York</option>
-                    </select>
+                <div class="logo">SYRIX <span style="color:var(--red)">HUB</span></div>
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <div id="user-name" style="font-weight:bold;">OPERATOR</div>
+                    <button class="btn ghost" style="padding:5px 10px; font-size:0.7rem;" onclick="firebase.auth().signOut()">LOGOUT</button>
                 </div>
             </div>
-
             <div class="header-bottom">
                 <nav class="scroll-nav">
-                    <button class="nav-pill active" onclick="window.showTab('dashboard', this)">DASHBOARD</button>
-                    <button class="nav-pill" onclick="window.showTab('playbook', this)">PLAYBOOK</button>
-                    <button class="nav-pill" onclick="window.showTab('comps', this)">COMPS</button>
-                    <button class="nav-pill" onclick="window.showTab('matches', this)">MATCHES</button>
-                    <button class="nav-pill" onclick="window.showTab('warroom', this)">WAR ROOM</button>
-                    <button class="nav-pill" onclick="window.showTab('stratbook', this)">STRATBOOK</button>
-                    <button class="nav-pill" onclick="window.showTab('lineups', this)">LINEUPS</button>
-                    <button class="nav-pill" onclick="window.showTab('roster', this)">ROSTER</button>
-                    <button class="nav-pill" onclick="window.showTab('mapveto', this)">MAP VETO</button>
-                    <button class="nav-pill admin-only" onclick="window.showTab('admin', this)" style="display:none; border-color:var(--red);">ADMIN</button>
+                    <button class="nav-pill active" onclick="window.setTab('dashboard', this)">DASHBOARD</button>
+                    <button class="nav-pill" onclick="window.setTab('matches', this)">MATCHES</button>
+                    <button class="nav-pill" onclick="window.setTab('warroom', this)">WAR ROOM</button>
+                    <button class="nav-pill" onclick="window.setTab('stratbook', this)">STRATBOOK</button>
+                    <button class="nav-pill" onclick="window.setTab('lineups', this)">LINEUPS</button>
+                    <button class="nav-pill" onclick="window.setTab('roster', this)">ROSTER MGR</button>
+                    <button class="nav-pill" onclick="window.setTab('mapveto', this)">MAP VETO</button>
+                    <button class="nav-pill admin-only" style="display:none; border-color:var(--red);" onclick="window.setTab('admin', this)">ADMIN</button>
                 </nav>
             </div>
         </header>
@@ -83,142 +59,165 @@
 
             <div id="dashboard" class="tabView active">
                 <div class="dashboard-grid">
-
                     <div class="dash-col-left">
-                        <div class="card message-card">
-                            <div class="card-header">
-                                <h3 class="tag"><i class="fa-solid fa-bullhorn"></i> CAPTAIN'S MESSAGE</h3>
-                                <button class="btn-xs" onclick="window.editCaptainMessage()">Edit</button>
-                            </div>
-                            <p id="captain-msg-text" class="message-body">Loading transmission...</p>
-                            <div id="captain-msg-edit" style="display:none;">
-                                <textarea id="captain-msg-input" class="dash-input" rows="3"></textarea>
-                                <button class="btn primary full-width" onclick="window.saveCaptainMessage()">POST</button>
+                        <div class="card">
+                            <h3 class="tag">CAPTAIN'S MESSAGE <button onclick="window.editMsg()" style="float:right; background:none; border:none; color:#555; cursor:pointer;">Edit</button></h3>
+                            <p id="capt-msg" style="font-style:italic; font-size:1.1rem;">Loading...</p>
+                            <div id="capt-edit" style="display:none; margin-top:10px;">
+                                <textarea id="capt-input" class="dash-input"></textarea>
+                                <button class="btn primary full-width" onclick="window.saveMsg()">SAVE</button>
                             </div>
                         </div>
-
                         <div class="card">
-                            <div class="card-header">
-                                <h3 class="tag"><i class="fa-solid fa-umbrella-beach"></i> ABSENCE LOG</h3>
+                            <h3 class="tag">ABSENCE LOG</h3>
+                            <div style="display:flex; gap:10px;">
+                                <input type="date" id="abs-start" class="dash-input">
+                                <input type="date" id="abs-end" class="dash-input">
                             </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="label-small">START</label>
-                                    <input type="date" id="abs-start" class="dash-input">
-                                </div>
-                                <div class="form-group">
-                                    <label class="label-small">END</label>
-                                    <input type="date" id="abs-end" class="dash-input">
-                                </div>
-                            </div>
-                            <input type="text" id="abs-reason" class="dash-input" placeholder="Reason (e.g. Vacation, Exams)">
+                            <input id="abs-reason" class="dash-input" placeholder="Reason">
                             <button class="btn ghost full-width" onclick="window.logAbsence()">LOG ABSENCE</button>
-                            <div id="absence-list" class="list-container small-list">
-                            </div>
-                        </div>
-                        <div class="card">
-                            <h3 class="tag">AVAILABILITY HEATMAP</h3>
-                            <div class="heatmap-placeholder">
-                                <div class="heatmap-row"><span>MON</span><div class="heat-bar"></div></div>
-                                <div class="heatmap-row"><span>TUE</span><div class="heat-bar partial"></div></div>
-                                <div class="heatmap-row"><span>WED</span><div class="heat-bar"></div></div>
-                                <div class="heatmap-row"><span>THU</span><div class="heat-bar busy"></div></div>
-                                <div class="heatmap-row"><span>FRI</span><div class="heat-bar"></div></div>
-                            </div>
+                            <div id="abs-list" style="margin-top:15px; font-size:0.8rem; color:#888;"></div>
                         </div>
                     </div>
 
                     <div class="dash-col-right">
-                        <div class="card events-card">
-                            <div class="card-header">
-                                <h3 class="tag">UPCOMING EVENTS</h3>
-                                <span class="badge" id="active-ops-badge">0 ACTIVE</span>
-                            </div>
-                            <div id="dash-event-list" class="list-container">
-                                <div class="empty-state">No upcoming operations scheduled.</div>
-                            </div>
+                        <div class="card" style="height:100%;">
+                            <h3 class="tag">UPCOMING EVENTS</h3>
+                            <div id="dash-events" style="display:flex; flex-direction:column; gap:10px;">Loading...</div>
                         </div>
+                    </div>
 
-                        <div class="stats-row">
-                            <div class="card">
-                                <h3 class="tag">PERFORMANCE TREND</h3>
-                                <div class="stat-placeholder">Round Diff History</div>
-                            </div>
-                            <div class="card">
-                                <h3 class="tag">WIN RATE</h3>
-                                <div class="big-stat" id="dash-winrate">0%</div>
-                            </div>
-                            <div class="card">
-                                <h3 class="tag">ATK / DEF</h3>
-                                <div class="sub-stat"><i class="fa-solid fa-crosshairs"></i> 0% &nbsp; <i class="fa-solid fa-shield-halved"></i> 0%</div>
-                            </div>
-                            <div class="card">
-                                <h3 class="tag">BEST MAP</h3>
-                                <div class="big-stat" style="font-size: 2rem;">N/A</div>
-                            </div>
+                    <div class="dash-col-stats">
+                        <div class="card">
+                            <h3 class="tag">WIN RATE</h3>
+                            <div id="stat-win" style="font-size:3rem; font-weight:900;">--%</div>
+                        </div>
+                        <div class="card">
+                            <h3 class="tag">ACTIVE OPS</h3>
+                            <div id="stat-ops" style="font-size:3rem; font-weight:900;">0</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div id="stratbook" class="tabView">
-                <div class="stratbook-container">
-                    <div class="strat-main">
-                        <div class="canvas-toolbar-top card">
-                            <div class="toolbar-left">
-                                <button onclick="window.setTool('draw')" id="tool-draw" class="tool active"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="window.setTool('agent')" id="tool-agent" class="tool"><i class="fa-solid fa-user"></i></button>
-                                <input type="color" id="vpColor" value="#ff1e3c">
-                            </div>
-                            <div class="toolbar-right">
-                                <button onclick="window.saveStratToDB()" class="tool" title="Save"><i class="fa-solid fa-cloud-arrow-up"></i></button>
-                                <button onclick="window.clearPlanner()" class="tool danger"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                        <div class="canvas-wrapper card">
-                            <canvas id="vpCanvas"></canvas>
-                            <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png">
+                <div class="strat-container">
+                    <div class="canvas-wrap">
+                        <canvas id="vpCanvas"></canvas>
+                        <img id="vpMapImg" src="">
+                        <div style="position:absolute; top:10px; left:10px; z-index:20; background:#111; padding:5px; border-radius:4px; display:flex; gap:5px;">
+                            <button onclick="window.tool='draw'" class="btn ghost" style="padding:5px 10px;">✏️</button>
+                            <button onclick="window.tool='agent'" class="btn ghost" style="padding:5px 10px;">👤</button>
+                            <input type="color" id="vpColor" value="#ff1e3c" style="height:30px; border:none;">
+                            <button onclick="window.saveStrat()" class="btn primary" style="padding:5px 10px;">💾</button>
+                            <button onclick="window.clearStrat()" class="btn ghost" style="padding:5px 10px; color:red;">🗑</button>
                         </div>
                     </div>
-                    <div class="strat-side">
-                        <div class="card">
-                            <label class="tag">THEATER</label>
-                            <select id="vpMapSelect" onchange="window.changeMap()" class="dash-select full-width">
-                                <option value="ascent">ASCENT</option>
-                                <option value="bind">BIND</option>
-                                <option value="haven">HAVEN</option>
-                                <option value="lotus">LOTUS</option>
-                                <option value="split">SPLIT</option>
-                                <option value="sunset">SUNSET</option>
-                                <option value="abyss">ABYSS</option>
-                            </select>
+                    <div class="card">
+                        <label class="tag">MAP SELECT</label>
+                        <select id="vpMapSelect" class="dash-input" onchange="window.changeMap()">
+                            <option value="ascent">ASCENT</option>
+                            <option value="bind">BIND</option>
+                            <option value="haven">HAVEN</option>
+                            <option value="lotus">LOTUS</option>
+                            <option value="split">SPLIT</option>
+                            <option value="sunset">SUNSET</option>
+                            <option value="abyss">ABYSS</option>
+                        </select>
+                        <label class="tag" style="margin-top:20px;">AGENTS</label>
+                        <div id="agent-palette" style="display:grid; grid-template-columns:repeat(4,1fr); gap:5px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="matches" class="tabView">
+                <div class="split-view">
+                    <div class="card">
+                        <h3 class="tag">LOG MATCH / SCRIM</h3>
+                        <input id="m-opp" class="dash-input" placeholder="Opponent">
+                        <div style="display:flex; gap:10px;">
+                            <input type="number" id="m-us" class="dash-input" placeholder="Us">
+                            <input type="number" id="m-them" class="dash-input" placeholder="Them">
                         </div>
-                        <div class="card full-height">
-                            <label class="tag">ASSETS</label>
-                            <div id="agent-list" class="agent-grid">Loading...</div>
+                        <input type="date" id="m-date" class="dash-input">
+                        <select id="m-map" class="dash-input">
+                            <option>Ascent</option>
+                            <option>Bind</option>
+                            <option>Haven</option>
+                            <option>Lotus</option>
+                            <option>Pearl</option>
+                            <option>Split</option>
+                            <option>Sunset</option>
+                            <option>Abyss</option>
+                        </select>
+                        <button class="btn primary full-width" onclick="window.addMatch()">ADD RECORD</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="tag">HISTORY</h3>
+                        <div id="match-list" style="overflow-y:auto; max-height:600px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="warroom" class="tabView">
+                <div class="split-view">
+                    <div class="card">
+                        <h3 class="tag">TARGETS</h3>
+                        <button class="btn ghost full-width" onclick="window.newEnemy()">+ NEW TARGET</button>
+                        <div id="enemy-list" style="margin-top:15px;"></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="tag" id="wr-title">SELECT TARGET</h3>
+                        <div id="wr-content" style="display:none;">
+                            <label class="tag">INTEL / NOTES</label>
+                            <textarea id="wr-notes" class="dash-input" style="height:300px;"></textarea>
+                            <button class="btn primary" onclick="window.saveIntel()">UPDATE INTEL</button>
+                            <button class="btn ghost" onclick="window.deleteEnemy()" style="color:red; border-color:red;">DELETE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="lineups" class="tabView">
+                <div class="card">
+                    <h3 class="tag">LINEUP LIBRARY</h3>
+                    <div class="grid-gallery" id="lineup-grid">
+                        <div class="gallery-card" onclick="window.addLineup()" style="display:flex; align-items:center; justify-content:center; border:2px dashed #333;">+ ADD NEW</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="roster" class="tabView">
+                <div class="split-view">
+                    <div class="card">
+                        <h3 class="tag">MEMBERS</h3>
+                        <div id="roster-list-edit"></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="tag">EDIT PROFILE</h3>
+                        <div id="roster-edit-form" style="display:none;">
+                            <input id="r-id" class="dash-input" disabled style="color:#555;">
+                            <select id="r-role" class="dash-input"><option>Captain</option><option>Main</option><option>Sub</option><option>Coach</option></select>
+                            <input id="r-pfp" class="dash-input" placeholder="Image URL">
+                            <button class="btn primary full-width" onclick="window.saveRosterProfile()">SAVE CHANGES</button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div id="mapveto" class="tabView">
-                <div class="card full-height">
-                    <div class="card-header">
-                        <h3 class="tag">MAP VETO PROTOCOL</h3>
-                        <button class="btn ghost" onclick="window.resetVeto()">RESET BOARD</button>
-                    </div>
-                    <div class="veto-grid" id="veto-grid">
-                    </div>
+                <div class="card">
+                    <h3 class="tag">MAP VETO BOARD <button onclick="window.resetVeto()" style="float:right; font-size:0.7rem; background:none; border:none; color:white; cursor:pointer;">RESET</button></h3>
+                    <div id="veto-grid" class="grid-gallery"></div>
                 </div>
             </div>
 
-            <div id="playbook" class="tabView"><div class="card center-msg">PLAYBOOK MODULE OFFLINE</div></div>
-            <div id="comps" class="tabView"><div class="card center-msg">AGENT COMPS MODULE OFFLINE</div></div>
-            <div id="matches" class="tabView"><div class="card center-msg">MATCH HISTORY MODULE OFFLINE</div></div>
-            <div id="warroom" class="tabView"><div class="card center-msg">WAR ROOM MODULE OFFLINE</div></div>
-            <div id="lineups" class="tabView"><div class="card center-msg">LINEUP LIBRARY OFFLINE</div></div>
-            <div id="roster" class="tabView"><div class="card center-msg">ROSTER MANAGEMENT OFFLINE</div></div>
-            <div id="admin" class="tabView"><div class="card center-msg">ADMIN CONSOLE</div></div>
+            <div id="admin" class="tabView">
+                <div class="card">
+                    <h3 class="tag">PENDING APPLICATIONS</h3>
+                    <div id="admin-list"></div>
+                </div>
+            </div>
 
         </main>
     </div>

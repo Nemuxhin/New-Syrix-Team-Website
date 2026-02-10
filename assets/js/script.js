@@ -1,4 +1,4 @@
-﻿// --- 1. CONFIGURATION ---
+﻿// --- CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyAcZy0oY6fmwJ4Lg9Ac-Bq__eMukMC_u0w",
     authDomain: "syrix-team-schedule.firebaseapp.com",
@@ -8,234 +8,217 @@ const firebaseConfig = {
     appId: "1:571804588891:web:c3c17a4859b6b4f057187e"
 };
 
+const ADMIN_UIDS = ["M9FzRywhRIdUveh5JKUfQgJtlIB3", "SiPLxB20VzVGBZL3rTM42FsgEy52", "pmXgTX5dxbVns0nnO54kl1BR07A3"];
 const MAPS = ["Ascent", "Bind", "Haven", "Lotus", "Pearl", "Split", "Sunset", "Abyss"];
-let db, auth;
-let currentTool = 'draw';
-let activeAgent = null;
 
-// --- 2. INITIALIZATION ---
+let db, auth, currentUser;
+let canvas, ctx, tool = 'draw', activeAgent = null, isDrawing = false;
+let currentEnemyId = null;
+let currentRosterId = null;
+
+// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof firebase !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         auth = firebase.auth();
 
-        // Auth Listener
+        // Check Auth
         auth.onAuthStateChanged(user => {
-            const lock = document.getElementById('hubLocked');
-            const unlock = document.getElementById('hubUnlocked');
-
-            if (user) {
-                if (lock) lock.style.display = 'none';
-                if (unlock) unlock.style.display = 'block';
-                document.getElementById('userProfile').innerText = user.displayName ? user.displayName.toUpperCase() : "OPERATOR";
-
-                // Init Modules
-                initStratbook();
-                loadCaptainMessage();
-                loadMapVeto();
-                loadAbsences();
-                loadDashboardEvents();
-            } else {
-                if (lock) lock.style.display = 'flex';
-                if (unlock) unlock.style.display = 'none';
-            }
+            currentUser = user;
+            if (document.body.id === 'page-hub') handleHubAuth(user);
         });
+
+        // Page Logic
+        if (document.body.id === 'page-home') loadLandingData();
+        if (document.body.id === 'page-hub') initStratbook();
     }
 });
 
-// --- 3. NAVIGATION ---
-window.loginWithDiscord = () => {
-    const provider = new firebase.auth.OAuthProvider('oidc.discord');
-    auth.signInWithPopup(provider).catch(e => alert(e.message));
-};
-
-window.showTab = (id, btn) => {
-    document.querySelectorAll('.tabView').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-pill').forEach(el => el.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    btn.classList.add('active');
-
-    // Canvas Resize Fix when switching to stratbook
-    if (id === 'stratbook') {
-        const c = document.getElementById('vpCanvas');
-        if (c) {
-            c.width = c.parentElement.clientWidth;
-            c.height = c.parentElement.clientHeight;
-        }
-    }
-};
-
-// --- 4. CAPTAIN'S MESSAGE ---
-function loadCaptainMessage() {
-    db.collection("general").doc("captain_message").onSnapshot(doc => {
-        if (doc.exists) {
-            document.getElementById('captain-msg-text').innerText = `"${doc.data().text}"`;
-        }
-    });
-}
-
-window.editCaptainMessage = () => {
-    document.getElementById('captain-msg-text').style.display = 'none';
-    document.getElementById('captain-msg-edit').style.display = 'block';
-    // Pre-fill
-    document.getElementById('captain-msg-input').value = document.getElementById('captain-msg-text').innerText.replace(/"/g, '');
-};
-
-window.saveCaptainMessage = () => {
-    const txt = document.getElementById('captain-msg-input').value;
-    db.collection("general").doc("captain_message").set({ text: txt }, { merge: true });
-    document.getElementById('captain-msg-text').style.display = 'block';
-    document.getElementById('captain-msg-edit').style.display = 'none';
-};
-
-// --- 5. ABSENCE LOG ---
-function loadAbsences() {
-    db.collection("leaves").orderBy("start").onSnapshot(snap => {
-        const list = document.getElementById('absence-list');
-        list.innerHTML = "";
-        if (snap.empty) {
-            list.innerHTML = "No upcoming absences.";
-            return;
-        }
-        snap.forEach(doc => {
-            const l = doc.data();
-            list.innerHTML += `<div><span style="color:var(--red); font-weight:bold;">${l.user}</span>: ${l.start} to ${l.end}</div>`;
-        });
-    });
-}
-
-window.logAbsence = () => {
-    const start = document.getElementById('abs-start').value;
-    const end = document.getElementById('abs-end').value;
-    const reason = document.getElementById('abs-reason').value;
-
-    if (!start || !end) return alert("Please select dates.");
-
-    db.collection("leaves").add({
-        user: auth.currentUser.displayName,
-        start, end, reason,
-        uid: auth.currentUser.uid
-    }).then(() => {
-        alert("Absence logged.");
-        document.getElementById('abs-reason').value = "";
-    });
-};
-
-// --- 6. DASHBOARD EVENTS ---
-function loadDashboardEvents() {
-    const today = new Date().toISOString().split('T')[0];
-    db.collection("events").where("date", ">=", today).orderBy("date").limit(3).onSnapshot(snap => {
-        const list = document.getElementById('dash-event-list');
-        const badge = document.getElementById('active-ops-badge');
-        const countDisplay = document.getElementById('dash-active-ops');
-
-        list.innerHTML = "";
-        badge.innerText = `${snap.size} ACTIVE`;
-        countDisplay.innerText = snap.size;
-
-        if (snap.empty) {
-            list.innerHTML = `<div class="empty-state">No upcoming operations scheduled.</div>`;
-            document.getElementById('dash-next-match').innerText = "No upcoming operations scheduled.";
-        } else {
-            let first = true;
+// --- LANDING PAGE LOGIC ---
+function loadLandingData() {
+    // Matches
+    db.collection("events").orderBy("date").onSnapshot(snap => {
+        const div = document.getElementById('landing-matches');
+        if (div) {
+            div.innerHTML = "";
+            let wins = 0, total = 0;
             snap.forEach(doc => {
                 const m = doc.data();
-                if (first) {
-                    document.getElementById('dash-next-match').innerHTML = `
-                        <div style="font-size:1.5rem; font-weight:900; color:white;">VS ${m.opponent}</div>
-                        <div style="color:var(--red); font-weight:bold;">${m.date} @ ${m.time}</div>
-                        <div style="font-size:0.8rem; color:#888;">${m.type} // ${m.map || 'TBD'}</div>
-                    `;
-                    first = false;
+                if (m.result) { // Completed match
+                    total++;
+                    if (parseInt(m.result.us) > parseInt(m.result.them)) wins++;
+                } else if (m.date >= new Date().toISOString().split('T')[0]) { // Upcoming
+                    div.innerHTML += `
+                        <div class="newsCard">
+                            <small style="color:var(--red); font-weight:900;">${m.date}</small>
+                            <h3 style="margin:5px 0;">VS ${m.opponent}</h3>
+                            <p style="font-size:0.8rem; color:#888;">${m.map || 'TBD'}</p>
+                        </div>`;
                 }
-                list.innerHTML += `
-                    <div style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <div style="font-weight:bold; color:white;">VS ${m.opponent}</div>
-                        <div style="font-size:0.8rem; color:#888;">${m.date} @ ${m.time}</div>
-                    </div>
-                `;
+            });
+            // Update Stats
+            const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
+            const rec = document.getElementById('stat-record');
+            const wrEl = document.getElementById('stat-winrate');
+            if (rec) rec.innerText = `${wins}W - ${total - wins}L`;
+            if (wrEl) wrEl.innerText = `${wr}%`;
+        }
+    });
+
+    // Roster
+    db.collection("roster").onSnapshot(snap => {
+        const div = document.getElementById('landing-roster');
+        const stat = document.getElementById('stat-roster');
+        if (div) {
+            div.innerHTML = "";
+            if (stat) stat.innerText = snap.size;
+            snap.forEach(doc => {
+                const p = doc.data();
+                div.innerHTML += `
+                    <div class="roster-card">
+                        <img src="${p.pfp || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde'}">
+                        <div class="roster-info">
+                            <h3>${doc.id}</h3>
+                            <span>${p.role}</span>
+                        </div>
+                    </div>`;
             });
         }
     });
 }
 
-// --- 7. MAP VETO SYSTEM ---
-function loadMapVeto() {
-    const grid = document.getElementById('veto-grid');
-    if (!grid) return;
+// --- HUB AUTH ---
+function handleHubAuth(user) {
+    const lock = document.getElementById('hubLocked');
+    const unlock = document.getElementById('hubUnlocked');
+    const form = document.getElementById('app-form');
+    const msg = document.getElementById('auth-msg');
 
-    db.collection("general").doc("map_veto").onSnapshot(doc => {
-        const data = doc.exists ? doc.data() : {};
-        grid.innerHTML = "";
+    if (!user) {
+        lock.style.display = 'flex';
+        unlock.style.display = 'none';
+        return;
+    }
 
-        MAPS.forEach(map => {
-            const status = data[map] || 'neutral'; // neutral, ban, pick
-            // Map images placeholder logic
+    db.collection("roster").where("uid", "==", user.uid).get().then(snap => {
+        if (!snap.empty || ADMIN_UIDS.includes(user.uid)) {
+            // Authorized
+            lock.style.display = 'none';
+            unlock.style.display = 'block';
+            document.getElementById('user-name').innerText = user.displayName.toUpperCase();
 
-            grid.innerHTML += `
-                <div class="veto-card ${status}" onclick="window.toggleVeto('${map}', '${status}')" style="background-image: url('https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/splash.png')">
-                    <div class="veto-overlay">
-                        <div>
-                            <div>${map}</div>
-                            <div style="font-size:0.6rem; color:${status === 'ban' ? 'red' : (status === 'pick' ? '#0f0' : '#ccc')}">${status}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
+            if (ADMIN_UIDS.includes(user.uid)) document.querySelector('.admin-only').style.display = 'inline-block';
+
+            // Load Hub Data
+            loadCaptainMsg();
+            loadAbsences();
+            loadHubMatches();
+            loadEnemies();
+            loadLineups();
+            loadRosterList();
+            loadMapVeto();
+            if (ADMIN_UIDS.includes(user.uid)) loadApplications();
+
+        } else {
+            // Unauthorized - Show Application
+            msg.innerText = `WELCOME, ${user.displayName}. NOT ENLISTED.`;
+            form.style.display = 'block';
+        }
     });
 }
 
-window.toggleVeto = (map, currentStatus) => {
-    const nextStatus = currentStatus === 'neutral' ? 'ban' : (currentStatus === 'ban' ? 'pick' : 'neutral');
-    db.collection("general").doc("map_veto").set({
-        [map]: nextStatus
-    }, { merge: true });
+window.loginDiscord = () => auth.signInWithPopup(new firebase.auth.OAuthProvider('oidc.discord'));
+
+window.submitApp = () => {
+    const ign = document.getElementById('app-ign').value;
+    const why = document.getElementById('app-why').value;
+    if (!ign || !why) return alert("Required fields missing");
+
+    db.collection("applications").add({
+        user: ign,
+        uid: currentUser.uid,
+        rank: document.getElementById('app-rank').value,
+        role: document.getElementById('app-role').value,
+        tracker: document.getElementById('app-tracker').value,
+        why: why,
+        date: new Date().toISOString()
+    }).then(() => alert("Application Submitted"));
 };
 
-window.resetVeto = () => {
-    if (confirm("Reset the board?")) {
-        db.collection("general").doc("map_veto").set({});
+// --- NAVIGATION ---
+window.setTab = (id, btn) => {
+    document.querySelectorAll('.tabView').forEach(e => e.classList.remove('active'));
+    document.querySelectorAll('.nav-pill').forEach(e => e.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+
+    // Resize canvas if needed
+    if (id === 'stratbook') {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
     }
 };
 
-// --- 8. STRATBOOK (Minimal Canvas Logic) ---
-let canvas, ctx, isDrawing = false;
+// --- 1. DASHBOARD MODULES ---
+function loadCaptainMsg() {
+    db.collection("general").doc("captain_message").onSnapshot(doc => {
+        if (doc.exists) document.getElementById('capt-msg').innerText = `"${doc.data().text}"`;
+    });
+}
+window.editMsg = () => document.getElementById('capt-edit').style.display = 'block';
+window.saveMsg = () => {
+    const txt = document.getElementById('capt-input').value;
+    db.collection("general").doc("captain_message").set({ text: txt }, { merge: true });
+    document.getElementById('capt-edit').style.display = 'none';
+};
 
+function loadAbsences() {
+    db.collection("leaves").orderBy("start").onSnapshot(snap => {
+        const div = document.getElementById('abs-list');
+        div.innerHTML = "";
+        snap.forEach(doc => {
+            const l = doc.data();
+            div.innerHTML += `<div><b style="color:var(--red)">${l.user}</b>: ${l.start} to ${l.end}</div>`;
+        });
+    });
+}
+window.logAbsence = () => {
+    db.collection("leaves").add({
+        user: currentUser.displayName,
+        start: document.getElementById('abs-start').value,
+        end: document.getElementById('abs-end').value,
+        reason: document.getElementById('abs-reason').value
+    }).then(() => {
+        document.getElementById('abs-reason').value = "";
+        alert("Logged");
+    });
+};
+
+// --- 2. STRATBOOK ---
 function initStratbook() {
     canvas = document.getElementById('vpCanvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
 
-    // Agent Palette
-    fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true')
-        .then(res => res.json())
-        .then(json => {
-            document.getElementById('agent-list').innerHTML = json.data.map(a => `
-                <div onclick="window.prepAgent('${a.displayIcon}')" style="width:40px; height:40px; display:inline-block; margin:2px; cursor:pointer; border:1px solid #333;">
-                    <img src="${a.displayIcon}" style="width:100%; height:100%;">
-                </div>
-            `).join('');
-        });
+    // Load Agents
+    fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true').then(r => r.json()).then(d => {
+        document.getElementById('agent-palette').innerHTML = d.data.map(a =>
+            `<img src="${a.displayIcon}" onclick="window.activeAgent='${a.displayIcon}'; window.tool='agent'" style="width:100%; cursor:pointer; border:1px solid #333;">`
+        ).join('');
+    });
 
-    // Drawing Events
-    canvas.onmousedown = (e) => {
-        if (currentTool === 'draw') {
-            isDrawing = true;
-            ctx.beginPath();
-            ctx.moveTo(e.offsetX, e.offsetY);
-        } else if (currentTool === 'agent' && activeAgent) {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = activeAgent;
-            img.onload = () => {
-                ctx.drawImage(img, e.offsetX - 20, e.offsetY - 20, 40, 40);
-            };
+    // Drawing
+    canvas.onmousedown = e => {
+        if (window.tool === 'draw') {
+            isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY);
+        } else if (window.tool === 'agent' && window.activeAgent) {
+            const i = new Image(); i.src = window.activeAgent; i.crossOrigin = "anonymous";
+            i.onload = () => ctx.drawImage(i, e.offsetX - 15, e.offsetY - 15, 30, 30);
         }
     };
-    canvas.onmousemove = (e) => {
-        if (!isDrawing || currentTool !== 'draw') return;
+    canvas.onmousemove = e => {
+        if (!isDrawing) return;
         ctx.lineTo(e.offsetX, e.offsetY);
         ctx.strokeStyle = document.getElementById('vpColor').value;
         ctx.lineWidth = 3;
@@ -243,24 +226,161 @@ function initStratbook() {
     };
     window.onmouseup = () => isDrawing = false;
 }
-
-window.setTool = (t) => {
-    currentTool = t;
-    document.querySelectorAll('.tool').forEach(e => e.classList.remove('active'));
-    document.getElementById('tool-' + t).classList.add('active');
-};
-
-window.prepAgent = (url) => {
-    activeAgent = url;
-    window.setTool('agent');
-};
-
-window.clearPlanner = () => {
+window.changeMap = () => {
+    const m = document.getElementById('vpMapSelect').value;
+    document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`; // Simplified for demo
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 };
-
-window.changeMap = () => {
-    const map = document.getElementById('vpMapSelect').value;
-    document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`;
-    window.clearPlanner();
+window.clearStrat = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+window.saveStrat = () => {
+    // Combine canvases logic (simplified)
+    alert("Strategy saved to Cloud (Simulated)");
 };
+
+// --- 3. MATCHES ---
+function loadHubMatches() {
+    db.collection("events").orderBy("date", "desc").onSnapshot(snap => {
+        const list = document.getElementById('match-list');
+        const dashList = document.getElementById('dash-events');
+        list.innerHTML = "";
+        dashList.innerHTML = "";
+
+        let active = 0;
+        snap.forEach(doc => {
+            const m = doc.data();
+            const el = `
+                <div class="list-item">
+                    <div>
+                        <div style="font-weight:bold; color:white;">VS ${m.opponent}</div>
+                        <div style="font-size:0.8rem; color:#888;">${m.date} • ${m.map}</div>
+                        ${m.result ? `<div style="color:${parseInt(m.result.us) > parseInt(m.result.them) ? 'green' : 'red'}">${m.result.us} - ${m.result.them}</div>` : ''}
+                    </div>
+                    <button style="color:red; background:none; border:none; cursor:pointer;" onclick="window.delMatch('${doc.id}')">✕</button>
+                </div>`;
+
+            list.innerHTML += el;
+            if (!m.result && active < 5) {
+                dashList.innerHTML += el;
+                active++;
+            }
+        });
+        document.getElementById('stat-ops').innerText = active;
+    });
+}
+window.addMatch = () => {
+    const res = document.getElementById('m-us').value;
+    const data = {
+        opponent: document.getElementById('m-opp').value,
+        date: document.getElementById('m-date').value,
+        map: document.getElementById('m-map').value,
+        result: res ? { us: res, them: document.getElementById('m-them').value } : null
+    };
+    db.collection("events").add(data).then(() => alert("Match Added"));
+};
+window.delMatch = (id) => { if (confirm("Delete?")) db.collection("events").doc(id).delete(); };
+
+// --- 4. WAR ROOM ---
+function loadEnemies() {
+    db.collection("war_room").onSnapshot(snap => {
+        const l = document.getElementById('enemy-list');
+        l.innerHTML = "";
+        snap.forEach(doc => {
+            const e = doc.data();
+            l.innerHTML += `<div class="list-item" style="cursor:pointer" onclick="window.openEnemy('${doc.id}')"><b>${e.name}</b></div>`;
+        });
+    });
+}
+window.newEnemy = () => {
+    const n = prompt("Team Name:");
+    if (n) db.collection("war_room").add({ name: n, notes: "" });
+};
+window.openEnemy = (id) => {
+    currentEnemyId = id;
+    db.collection("war_room").doc(id).get().then(doc => {
+        document.getElementById('wr-title').innerText = doc.data().name;
+        document.getElementById('wr-notes').value = doc.data().notes;
+        document.getElementById('wr-content').style.display = 'block';
+    });
+};
+window.saveIntel = () => db.collection("war_room").doc(currentEnemyId).update({ notes: document.getElementById('wr-notes').value });
+window.deleteEnemy = () => db.collection("war_room").doc(currentEnemyId).delete().then(() => document.getElementById('wr-content').style.display = 'none');
+
+// --- 5. LINEUPS ---
+function loadLineups() {
+    // Placeholder - would load from collection("lineups")
+    document.getElementById('lineup-grid').innerHTML = `<div class="gallery-card" onclick="alert('Add Lineup Feature')" style="display:flex; justify-content:center; align-items:center; border:2px dashed #444;">+ ADD</div>`;
+}
+
+// --- 6. ROSTER MGR ---
+function loadRosterList() {
+    db.collection("roster").onSnapshot(snap => {
+        const l = document.getElementById('roster-list-edit');
+        l.innerHTML = "";
+        snap.forEach(doc => {
+            l.innerHTML += `<div class="list-item" onclick="window.editRoster('${doc.id}')" style="cursor:pointer;">${doc.id} <span style="font-size:0.7rem; color:#888;">${doc.data().role}</span></div>`;
+        });
+    });
+}
+window.editRoster = (id) => {
+    currentRosterId = id;
+    document.getElementById('r-id').value = id;
+    document.getElementById('roster-edit-form').style.display = 'block';
+};
+window.saveRosterProfile = () => {
+    db.collection("roster").doc(currentRosterId).update({
+        role: document.getElementById('r-role').value,
+        pfp: document.getElementById('r-pfp').value
+    }).then(() => alert("Profile Updated"));
+};
+
+// --- 7. MAP VETO ---
+function loadMapVeto() {
+    db.collection("general").doc("veto").onSnapshot(doc => {
+        const d = doc.data() || {};
+        const g = document.getElementById('veto-grid');
+        g.innerHTML = "";
+        MAPS.forEach(m => {
+            const s = d[m] || 'neutral';
+            let color = '#333';
+            if (s === 'ban') color = 'rgba(255,0,0,0.5)';
+            if (s === 'pick') color = 'rgba(0,255,0,0.3)';
+
+            g.innerHTML += `
+                <div class="gallery-card" onclick="window.toggleVeto('${m}', '${s}')" style="background:${color}; display:flex; align-items:center; justify-content:center;">
+                    <h3>${m}</h3>
+                    <div class="gallery-info">${s.toUpperCase()}</div>
+                </div>`;
+        });
+    });
+}
+window.toggleVeto = (m, s) => {
+    const n = s === 'neutral' ? 'ban' : (s === 'ban' ? 'pick' : 'neutral');
+    db.collection("general").doc("veto").set({ [m]: n }, { merge: true });
+};
+window.resetVeto = () => db.collection("general").doc("veto").set({});
+
+// --- 8. ADMIN ---
+function loadApplications() {
+    db.collection("applications").onSnapshot(snap => {
+        const l = document.getElementById('admin-list');
+        l.innerHTML = "";
+        snap.forEach(doc => {
+            const a = doc.data();
+            l.innerHTML += `
+                <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+                    <div style="font-weight:bold; color:white;">${a.user} <span style="font-size:0.8rem; color:#888;">${a.rank}</span></div>
+                    <div style="font-style:italic; font-size:0.9rem;">"${a.why}"</div>
+                    <div style="display:flex; gap:10px; margin-top:10px; width:100%;">
+                        <button class="btn primary" onclick="window.acceptApp('${doc.id}', '${a.user}', '${a.uid}')" style="flex:1;">ACCEPT</button>
+                        <button class="btn ghost" onclick="window.rejectApp('${doc.id}')" style="flex:1;">REJECT</button>
+                    </div>
+                </div>`;
+        });
+    });
+}
+window.acceptApp = (id, user, uid) => {
+    db.collection("roster").doc(user).set({
+        uid: uid, role: "Tryout", rank: "Unranked", joined: new Date().toISOString()
+    }).then(() => db.collection("applications").doc(id).delete());
+};
+window.rejectApp = (id) => db.collection("applications").doc(id).delete();
