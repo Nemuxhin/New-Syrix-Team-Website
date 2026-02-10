@@ -6,23 +6,20 @@
     <title>SYRIX — Built Under Pressure</title>
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body id="page-home">
-
     <nav>
         <div class="logo">SYRIX</div>
         <ul class="nav-links">
             <li><a href="#about">About</a></li>
             <li><a href="#roster">Roster</a></li>
-            <li><a href="#matches">Matches</a></li>
+            <li><a href="#matches">Schedule</a></li>
             <li><a href="hub.html" class="btn-nav">HUB LOGIN</a></li>
         </ul>
     </nav>
-
     <header class="hero">
         <div class="hero-video-wrap">
             <div class="video-overlay"></div>
@@ -31,16 +28,13 @@
         <div class="heroContent">
             <div class="hero-badge">EST. 2024 • VALORANT PREMIER</div>
             <h1>Built Under<br><span class="text-red">Pressure</span></h1>
-            <p style="color:#ccc; font-size:1.2rem; max-width:500px; margin-bottom:30px;">
-                We are a disciplined organization dedicated to achieving excellence through strategy, systems, and execution.
-            </p>
+            <p style="color:#ccc; font-size:1.2rem; max-width:500px; margin-bottom:30px;">We are a disciplined organization dedicated to achieving excellence through strategy, systems, and execution.</p>
             <div class="heroActions">
                 <button class="btn-lg btn-red" onclick="window.location.href='hub.html'">Apply to Join</button>
                 <button class="btn-lg btn-outline" onclick="document.getElementById('roster').scrollIntoView()">View Roster</button>
             </div>
         </div>
     </header>
-
     <section id="about" class="container">
         <h2 class="sectionTitle">THE <span class="text-red">SYNDICATE</span></h2>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:50px;">
@@ -57,26 +51,22 @@
             </div>
         </div>
     </section>
-
     <section id="roster" class="container" style="background:#050505;">
         <h2 class="sectionTitle">ACTIVE <span class="text-red">ROSTER</span></h2>
-        <div class="featureGrid" id="landing-roster">
-            <div style="color:#555;">Connecting to Mainframe...</div>
-        </div>
+        <div class="featureGrid" id="landing-roster"><div style="color:#555;">Connecting to Mainframe...</div></div>
     </section>
-
     <section id="matches" class="container">
         <h2 class="sectionTitle">MISSION <span class="text-red">LOG</span></h2>
-        <div class="newsGrid" id="landing-matches">
-            <div style="color:#555;">Loading Operations...</div>
+        <div class="newsGrid" id="landing-matches"><div style="color:#555;">Loading Operations...</div></div>
+    </section>
+    <section id="shop" class="container">
+        <h2 class="sectionTitle">SUPPLY <span class="text-red">DROP</span></h2>
+        <div class="shopGrid">
+            <div class="product"><div class="prod-img" style="background-image:url('https://images.unsplash.com/photo-1556821840-3a63f95609a7')"></div><div class="prod-info"><h4>BLACKOUT HOODIE</h4><span class="price">€69.00</span></div></div>
+            <div class="product"><div class="prod-img" style="background-image:url('https://images.unsplash.com/photo-1521572163474-6864f9cf17ab')"></div><div class="prod-info"><h4>OFFICIAL JERSEY</h4><span class="price">€45.00</span></div></div>
         </div>
     </section>
-
-    <footer>
-        <div class="footer-logo">SYRIX</div>
-        <p class="copyright">© 2026 SYRIX ESPORTS • BLACK • RED • VALORANT</p>
-    </footer>
-
+    <footer><div class="footer-logo">SYRIX</div><p class="copyright">© 2026 SYRIX ESPORTS • BLACK • RED • VALORANT</p></footer>
     <script src="assets/js/script.js"></script>
 </body>
 </html>
