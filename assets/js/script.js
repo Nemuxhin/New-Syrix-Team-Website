@@ -1,6 +1,6 @@
 ﻿/**
- * SYRIX ESPORTS - CENTRAL LOGIC KERNEL v5.0 (Secured)
- * MATCHES FIRESTORE RULES VERSION 2
+ * SYRIX ESPORTS - CENTRAL LOGIC KERNEL v6.0
+ * DATABASE TARGET: Schedule/fw3Kmjdedt0auIH9O3Kp
  */
 
 // --- 1. CONFIGURATION ---
@@ -13,21 +13,22 @@ const firebaseConfig = {
     appId: "1:571804588891:web:c3c17a4859b6b4f057187e"
 };
 
-// MUST MATCH YOUR FIRESTORE RULES EXACTLY
 const CONSTANTS = {
-    // UIDs from your Rule #1
+    // YOUR SPECIFIC DATABASE PATH
+    ROOT_COLLECTION: "Schedule",
+    ROOT_DOC_ID: "fw3Kmjdedt0auIH9O3Kp",
+
     ADMIN_UIDS: [
-        "ouEH5sdcZKPsOnXx1UnVt4cpcgi1",
+        "M9FzRywhRIdUveh5JKUfQgJtlIB3",
         "SiPLxB20VzVGBZL3rTM42FsgEy52",
-        "pmXgTX5dxbVns0nnO54kl1BR07A3",
-        "lJU8T8l3jwZ33g1WKdBC4SiaIQ02"
+        "pmXgTX5dxbVns0nnO54kl1BR07A3"
     ],
     MAPS: ["Ascent", "Bind", "Haven", "Lotus", "Pearl", "Split", "Sunset", "Abyss"],
-    DAYS: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
     WEBHOOK: "https://discord.com/api/webhooks/1427426922228351042/lqw36ZxOPEnC3qK45b3vnqZvbkaYhzIxqb-uS1tex6CGOvmLYs19OwKZvslOVABdpHnD"
 };
 
 let db, auth, currentUser;
+let rootRef; // This will hold the reference to your specific folder
 let canvas, ctx, currentTool = 'draw', activeAgent = null, isDrawing = false;
 let currentEnemyId = null, currentRosterId = null, compSlotIndex = null;
 let tempLineupX = 0, tempLineupY = 0, currentLineupId = null;
@@ -39,7 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
             auth = firebase.auth();
-            console.log("System: Secure Connection Established.");
+
+            // POINT TO YOUR SPECIFIC DOCUMENT
+            rootRef = db.collection(CONSTANTS.ROOT_COLLECTION).doc(CONSTANTS.ROOT_DOC_ID);
+
+            console.log(`System: Linked to ${CONSTANTS.ROOT_COLLECTION}/${CONSTANTS.ROOT_DOC_ID}`);
         } catch (e) { console.error("Firebase Error", e); }
 
         auth.onAuthStateChanged(user => {
@@ -72,8 +77,8 @@ async function fetchAgents() {
 
 // --- 4. LANDING PAGE RENDERER ---
 function loadLandingData() {
-    // Rule #3 allows read: if true
-    db.collection("events").orderBy("date").onSnapshot(snap => {
+    // Use rootRef.collection() instead of db.collection()
+    rootRef.collection("events").orderBy("date").onSnapshot(snap => {
         const div = document.getElementById('landing-matches');
         if (div) {
             div.innerHTML = "";
@@ -101,8 +106,7 @@ function loadLandingData() {
         }
     });
 
-    // Rule #2 allows read: if true
-    db.collection("roster").onSnapshot(snap => {
+    rootRef.collection("roster").onSnapshot(snap => {
         const div = document.getElementById('landing-roster');
         if (div) {
             div.innerHTML = "";
@@ -138,8 +142,8 @@ function handleHubAuth(user) {
         return;
     }
 
-    // Check if user is in Roster or is Admin (Rule #1 & #2)
-    db.collection("roster").where("uid", "==", user.uid).get().then(snap => {
+    // Check Permissions inside your specific folder
+    rootRef.collection("roster").where("uid", "==", user.uid).get().then(snap => {
         const isAdmin = CONSTANTS.ADMIN_UIDS.includes(user.uid);
         const isRoster = !snap.empty;
 
@@ -148,11 +152,10 @@ function handleHubAuth(user) {
             screens.unlocked.style.display = 'flex';
             document.getElementById('user-name').innerText = user.displayName.toUpperCase();
 
-            // Only Admins see Admin/Partners/Content tabs (Rule #1)
             if (isAdmin) {
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
                 document.getElementById('user-role').innerText = "ADMINISTRATOR";
-                loadApps(); // Rule #8
+                loadApps();
             }
 
             // Load All Modules
@@ -168,7 +171,6 @@ function handleHubAuth(user) {
 
 window.loginDiscord = () => auth.signInWithPopup(new firebase.auth.OAuthProvider('oidc.discord'));
 
-// Rule #8: allow create: if request.auth != null
 window.submitApp = () => {
     const data = {
         user: document.getElementById('app-ign').value,
@@ -182,7 +184,7 @@ window.submitApp = () => {
 
     if (!data.user || !data.why) return alert("Required fields missing.");
 
-    db.collection("applications").add(data).then(() => {
+    rootRef.collection("applications").add(data).then(() => {
         fetch(CONSTANTS.WEBHOOK, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -207,48 +209,43 @@ window.setTab = (id, btn) => {
 };
 
 // --- 6. MODULE: DASHBOARD ---
-// Rule #7: General read true, write admin
 function loadCaptainMsg() {
-    db.collection("general").doc("captain_message").onSnapshot(doc => {
+    rootRef.collection("general").doc("captain_message").onSnapshot(doc => {
         if (doc.exists) document.getElementById('capt-msg').innerText = `"${doc.data().text}"`;
     });
 }
 window.editMsg = () => document.getElementById('capt-edit').style.display = 'block';
 window.saveMsg = () => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Admin Only");
-    db.collection("general").doc("captain_message").set({ text: document.getElementById('capt-input').value }, { merge: true });
+    rootRef.collection("general").doc("captain_message").set({ text: document.getElementById('capt-input').value }, { merge: true });
     document.getElementById('capt-edit').style.display = 'none';
 };
 
-// Rule #6: Leaves read true, create auth, delete own/admin
 function loadAbsences() {
-    db.collection("leaves").orderBy("start").onSnapshot(snap => {
+    rootRef.collection("leaves").orderBy("start").onSnapshot(snap => {
         const div = document.getElementById('abs-list');
         div.innerHTML = "";
         snap.forEach(doc => {
             const l = doc.data();
-            const canDelete = (l.user === currentUser.displayName || CONSTANTS.ADMIN_UIDS.includes(currentUser.uid));
             div.innerHTML += `
                 <div class="list-item" style="font-size:0.8rem;">
                     <div><b class="text-red">${l.user}</b>: ${l.start}</div>
-                    ${canDelete ? `<button onclick="window.delAbsence('${doc.id}')" style="color:red; background:none; border:none;">x</button>` : ''}
+                    <button onclick="window.delAbsence('${doc.id}')" style="color:red; background:none; border:none;">x</button>
                 </div>`;
         });
     });
 }
 window.logAbsence = () => {
-    db.collection("leaves").add({
+    rootRef.collection("leaves").add({
         user: currentUser.displayName,
         start: document.getElementById('abs-start').value,
         end: document.getElementById('abs-end').value,
         reason: document.getElementById('abs-reason').value
     }).then(() => alert("Logged."));
 };
-window.delAbsence = (id) => db.collection("leaves").doc(id).delete();
+window.delAbsence = (id) => rootRef.collection("leaves").doc(id).delete();
 
-// Rule #4: Availability - User edits own doc (ID must match DisplayName)
 function loadHeatmap() {
-    db.collection("availabilities").onSnapshot(snap => {
+    rootRef.collection("availabilities").onSnapshot(snap => {
         const counts = {};
         snap.forEach(doc => {
             const slots = doc.data().slots || [];
@@ -277,8 +274,7 @@ function loadHeatmap() {
     });
 }
 window.saveAvail = () => {
-    // IMPORTANT: Rule #4 says user can only edit doc named after them
-    const ref = db.collection("availabilities").doc(currentUser.displayName);
+    const ref = rootRef.collection("availabilities").doc(currentUser.displayName);
     const newSlot = {
         day: document.getElementById('avail-day').value,
         start: document.getElementById('avail-start').value,
@@ -289,12 +285,12 @@ window.saveAvail = () => {
         let slots = doc.exists ? doc.data().slots : [];
         slots.push(newSlot);
         ref.set({ slots }, { merge: true }).then(() => alert("Availability Added"));
-    }).catch(e => alert("Permission Denied: " + e.message));
+    });
 };
 
 function loadDashboardEvents() {
     const today = new Date().toISOString().split('T')[0];
-    db.collection("events").where("date", ">=", today).orderBy("date").limit(3).onSnapshot(snap => {
+    rootRef.collection("events").where("date", ">=", today).orderBy("date").limit(3).onSnapshot(snap => {
         const div = document.getElementById('dash-events');
         div.innerHTML = "";
         document.getElementById('ops-badge').innerText = `${snap.size} ACTIVE`;
@@ -309,7 +305,7 @@ function loadDashboardEvents() {
     });
 }
 
-// --- 7. MODULE: STRATBOOK (Rule #5: All Auth) ---
+// --- 7. MODULE: STRATBOOK ---
 function initStratbook() {
     canvas = document.getElementById('vpCanvas');
     if (!canvas) return;
@@ -325,9 +321,8 @@ window.prepAgent = url => { activeAgent = url; currentTool = 'agent'; };
 window.clearStrat = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 window.changeMap = () => { document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`; window.clearStrat(); };
 window.saveStrat = () => {
-    // Rule #5 allows write to /strats/
     const data = canvas.toDataURL();
-    db.collection("strats").add({
+    rootRef.collection("strats").add({
         author: currentUser.displayName,
         map: document.getElementById('vpMapSelect').value,
         img: data,
@@ -335,10 +330,10 @@ window.saveStrat = () => {
     }).then(() => alert("Strat Saved to Cloud"));
 };
 
-// --- 8. MODULE: COMPS (Rule #5: All Auth) ---
+// --- 8. MODULE: COMPS ---
 window.loadComp = () => {
     const map = document.getElementById('comp-map').value;
-    db.collection("comps").doc(map).get().then(doc => {
+    rootRef.collection("comps").doc(map).get().then(doc => {
         const agents = doc.exists ? doc.data().agents : [null, null, null, null, null];
         for (let i = 0; i < 5; i++) {
             const slot = document.getElementById(`cs-${i}`);
@@ -358,12 +353,12 @@ window.setCompSlot = url => {
 window.saveComp = () => {
     const agents = [];
     for (let i = 0; i < 5; i++) agents.push(document.getElementById(`cs-${i}`).dataset.img || null);
-    db.collection("comps").doc(document.getElementById('comp-map').value).set({ agents }).then(() => { alert("Loadout Saved"); window.loadComp(); });
+    rootRef.collection("comps").doc(document.getElementById('comp-map').value).set({ agents }).then(() => { alert("Loadout Saved"); window.loadComp(); });
 };
 
-// --- 9. MODULE: MATCHES (Rule #3: Write Admin) ---
+// --- 9. MODULE: MATCHES ---
 function loadHubMatches() {
-    db.collection("events").orderBy("date", "desc").onSnapshot(snap => {
+    rootRef.collection("events").orderBy("date", "desc").onSnapshot(snap => {
         const div = document.getElementById('match-list');
         div.innerHTML = "";
         let wins = 0, total = 0;
@@ -380,71 +375,57 @@ function loadHubMatches() {
     });
 }
 window.addMatch = () => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Admin Only");
     const res = document.getElementById('m-us').value;
-    db.collection("events").add({
+    rootRef.collection("events").add({
         opponent: document.getElementById('m-opp').value, date: document.getElementById('m-date').value,
         map: document.getElementById('m-map').value,
         result: res ? { us: res, them: document.getElementById('m-them').value } : null
     }).then(() => alert("Logged"));
 };
-window.delMatch = id => { if (confirm("Delete?")) db.collection("events").doc(id).delete(); };
+window.delMatch = id => { if (confirm("Delete?")) rootRef.collection("events").doc(id).delete(); };
 
-// --- 10. MODULE: WAR ROOM (Rule #9 - actually no rule defined, assumed admin/coach only based on context, sticking to Admin writes) ---
+// --- 10. MODULE: WAR ROOM ---
 function loadEnemies() {
-    // Assuming read true
-    db.collection("war_room").onSnapshot(snap => {
+    rootRef.collection("war_room").onSnapshot(snap => {
         const div = document.getElementById('enemy-list');
         div.innerHTML = "";
         snap.forEach(doc => div.innerHTML += `<div class="list-item" onclick="window.openEnemy('${doc.id}')" style="cursor:pointer;"><b>${doc.data().name}</b></div>`);
     });
 }
-window.newEnemy = () => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Admin Only");
-    const n = prompt("Name:");
-    if (n) db.collection("war_room").add({ name: n, notes: "" });
-};
+window.newEnemy = () => { const n = prompt("Name:"); if (n) rootRef.collection("war_room").add({ name: n, notes: "" }); };
 window.openEnemy = id => {
     currentEnemyId = id;
-    db.collection("war_room").doc(id).get().then(doc => {
+    rootRef.collection("war_room").doc(id).get().then(doc => {
         document.getElementById('wr-title').innerText = doc.data().name;
         document.getElementById('wr-notes').value = doc.data().notes;
         document.getElementById('wr-content').style.display = 'flex';
     });
 };
-window.saveIntel = () => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Admin Only");
-    db.collection("war_room").doc(currentEnemyId).update({ notes: document.getElementById('wr-notes').value }).then(() => alert("Saved"));
-};
-window.deleteEnemy = () => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Admin Only");
-    db.collection("war_room").doc(currentEnemyId).delete().then(() => document.getElementById('wr-content').style.display = 'none');
-};
+window.saveIntel = () => rootRef.collection("war_room").doc(currentEnemyId).update({ notes: document.getElementById('wr-notes').value }).then(() => alert("Saved"));
+window.deleteEnemy = () => rootRef.collection("war_room").doc(currentEnemyId).delete().then(() => document.getElementById('wr-content').style.display = 'none');
 
-// --- 11. MODULE: ROSTER (Rule #2: Read True, Write Admin) ---
+// --- 11. MODULE: ROSTER ---
 function loadRosterList() {
-    db.collection("roster").onSnapshot(snap => {
+    rootRef.collection("roster").onSnapshot(snap => {
         const div = document.getElementById('roster-list-mgr');
         div.innerHTML = "";
         snap.forEach(doc => div.innerHTML += `<div class="list-item" onclick="window.editRoster('${doc.id}')" style="cursor:pointer;">${doc.id} <span class="badge">${doc.data().role}</span></div>`);
     });
 }
 window.editRoster = id => {
-    // Only allow editing if Admin
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return;
     currentRosterId = id;
     document.getElementById('r-id').value = id;
     document.getElementById('roster-editor').style.display = 'block';
 };
 window.saveProfile = () => {
-    db.collection("roster").doc(currentRosterId).update({
+    rootRef.collection("roster").doc(currentRosterId).update({
         role: document.getElementById('r-role').value, pfp: document.getElementById('r-pfp').value
     }).then(() => alert("Profile Updated"));
 };
 
-// --- 12. MODULE: MAP VETO (Rule #7: Write Admin) ---
+// --- 12. MODULE: MAP VETO ---
 function loadMapVeto() {
-    db.collection("general").doc("veto").onSnapshot(doc => {
+    rootRef.collection("general").doc("veto").onSnapshot(doc => {
         const data = doc.data() || {};
         const grid = document.getElementById('veto-grid');
         grid.innerHTML = "";
@@ -458,36 +439,34 @@ function loadMapVeto() {
     });
 }
 window.toggleVeto = (map, current) => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Coach/Admin Only");
     const next = current === 'neutral' ? 'ban' : (current === 'ban' ? 'pick' : 'neutral');
-    db.collection("general").doc("veto").set({ [map]: next }, { merge: true });
+    rootRef.collection("general").doc("veto").set({ [map]: next }, { merge: true });
 };
 window.resetVeto = () => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Admin Only");
-    if (confirm("Reset Board?")) db.collection("general").doc("veto").set({});
+    if (confirm("Reset Board?")) rootRef.collection("general").doc("veto").set({});
 };
 
-// --- 13. MODULE: PLAYBOOK (Rule #5: All Auth) ---
+// --- 13. MODULE: PLAYBOOK ---
 window.loadPlaybook = () => {
     const map = document.getElementById('pb-map').value;
     const side = document.getElementById('pb-side').value;
-    db.collection("playbooks").doc(`${map}_${side}`).get().then(doc => {
+    rootRef.collection("playbooks").doc(`${map}_${side}`).get().then(doc => {
         document.getElementById('pb-text').value = doc.exists ? doc.data().text : "";
     });
 };
 window.savePlaybook = () => {
     const map = document.getElementById('pb-map').value;
     const side = document.getElementById('pb-side').value;
-    db.collection("playbooks").doc(`${map}_${side}`).set({
+    rootRef.collection("playbooks").doc(`${map}_${side}`).set({
         text: document.getElementById('pb-text').value
     }).then(() => alert("Saved"));
 };
 
-// --- 14. MODULE: LINEUPS (Rule #5: All Auth) ---
+// --- 14. MODULE: LINEUPS ---
 window.changeLineupMap = () => {
     const map = document.getElementById('luMapSelect').value;
     document.getElementById('luMapImg').src = `https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png`;
-    db.collection("lineups").where("map", "==", map).onSnapshot(snap => {
+    rootRef.collection("lineups").where("map", "==", map).onSnapshot(snap => {
         const container = document.getElementById('lineup-pins');
         container.innerHTML = "";
         snap.forEach(doc => {
@@ -507,7 +486,7 @@ window.mapClickLineup = (e) => {
     document.getElementById('lineup-viewer').style.display = 'none';
 };
 window.saveLineup = () => {
-    db.collection("lineups").add({
+    rootRef.collection("lineups").add({
         map: document.getElementById('luMapSelect').value, x: tempLineupX, y: tempLineupY,
         title: document.getElementById('lu-title').value, url: document.getElementById('lu-url').value, desc: document.getElementById('lu-desc').value
     }).then(() => { document.getElementById('lineup-form').style.display = 'none'; alert("Saved"); });
@@ -521,12 +500,12 @@ window.viewLineup = (id, data) => {
     document.getElementById('view-lu-desc').innerText = data.desc;
 };
 window.deleteLineup = () => {
-    if (confirm("Delete?")) db.collection("lineups").doc(currentLineupId).delete().then(() => document.getElementById('lineup-viewer').style.display = 'none');
+    if (confirm("Delete?")) rootRef.collection("lineups").doc(currentLineupId).delete().then(() => document.getElementById('lineup-viewer').style.display = 'none');
 };
 
-// --- 15. MODULE: PARTNERS (Rule #8: Write Admin) ---
+// --- 15. MODULE: PARTNERS ---
 function loadPartners() {
-    db.collection("partners").onSnapshot(snap => {
+    rootRef.collection("partners").onSnapshot(snap => {
         const div = document.getElementById('partner-list');
         if (div) {
             div.innerHTML = "";
@@ -535,13 +514,12 @@ function loadPartners() {
     });
 }
 window.addPartner = () => {
-    if (!CONSTANTS.ADMIN_UIDS.includes(currentUser.uid)) return alert("Admin Only");
-    db.collection("partners").add({ name: document.getElementById('partner-name').value, contact: document.getElementById('partner-contact').value });
+    rootRef.collection("partners").add({ name: document.getElementById('partner-name').value, contact: document.getElementById('partner-contact').value });
 };
 
-// --- 16. MODULE: ADMIN APPS (Rule #8: Admin Read/Delete) ---
+// --- 16. MODULE: ADMIN APPS ---
 function loadApps() {
-    db.collection("applications").onSnapshot(snap => {
+    rootRef.collection("applications").onSnapshot(snap => {
         const div = document.getElementById('admin-list');
         div.innerHTML = "";
         snap.forEach(doc => {
@@ -560,9 +538,8 @@ function loadApps() {
 }
 window.decideApp = (id, user, uid, accept) => {
     if (accept) {
-        // Admin write to roster (Rule #2)
-        db.collection("roster").doc(user).set({ uid, role: "Tryout", rank: "Unranked" }).then(() => db.collection("applications").doc(id).delete());
+        rootRef.collection("roster").doc(user).set({ uid, role: "Tryout", rank: "Unranked" }).then(() => rootRef.collection("applications").doc(id).delete());
     } else {
-        if (confirm("Reject?")) db.collection("applications").doc(id).delete();
+        if (confirm("Reject?")) rootRef.collection("applications").doc(id).delete();
     }
 };
