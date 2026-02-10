@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SYRIX // Command Center</title>
     <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -15,9 +16,32 @@
     <div id="hubLocked" class="hubWrap auth-screen">
         <div class="card auth-card">
             <h2>SYRIX_PROTOCOL</h2>
-            <p>RESTRICTED ACCESS. AUTHORIZATION REQUIRED.</p>
-            <button class="btn primary full-width" onclick="window.loginWithDiscord()">AUTHENTICATE_SESSION</button>
-            <button class="btn ghost full-width" onclick="window.location.href='index.html'" style="margin-top: 10px;">RETURN TO BASE</button>
+            <p id="auth-status-text">RESTRICTED ACCESS. IDENTIFY.</p>
+
+            <div id="login-buttons">
+                <button class="btn primary full-width" onclick="window.loginWithDiscord()">LOGIN WITH DISCORD</button>
+                <button class="btn ghost full-width" onclick="window.location.href='index.html'" style="margin-top: 10px;">RETURN TO BASE</button>
+            </div>
+
+            <div id="app-form" style="display:none; text-align: left; margin-top: 20px;">
+                <h3 class="tag">ENLISTMENT FORM</h3>
+                <input type="text" id="app-ign" class="dash-input" placeholder="Riot ID (Name#TAG)">
+                <select id="app-rank" class="dash-input">
+                    <option value="Ascendant">Ascendant</option>
+                    <option value="Immortal">Immortal</option>
+                    <option value="Radiant">Radiant</option>
+                </select>
+                <select id="app-role" class="dash-input">
+                    <option value="Duelist">Duelist</option>
+                    <option value="Initiator">Initiator</option>
+                    <option value="Controller">Controller</option>
+                    <option value="Sentinel">Sentinel</option>
+                    <option value="Flex">Flex</option>
+                </select>
+                <input type="text" id="app-tracker" class="dash-input" placeholder="Tracker.gg URL">
+                <textarea id="app-why" class="dash-input" placeholder="Why do you want to join?" rows="3"></textarea>
+                <button class="btn primary full-width" onclick="window.submitApplication()" style="margin-top:15px;">SUBMIT DOSSIER</button>
+            </div>
         </div>
     </div>
 
@@ -30,8 +54,9 @@
 
             <nav class="horizontal-tabs">
                 <button class="tab-link active" onclick="window.showTab('planner', this)">STRATBOOK</button>
-                <button class="tab-link" onclick="window.showTab('roster', this)">ROSTER</button>
+                <button class="tab-link" onclick="window.showTab('matches', this)">OPS</button>
                 <button class="tab-link" onclick="window.showTab('warroom', this)">WAR ROOM</button>
+                <button class="tab-link admin-only" onclick="window.showTab('admin', this)" style="display:none; border: 1px solid var(--red);">ADMIN</button>
             </nav>
 
             <div class="nav-right">
@@ -50,20 +75,21 @@
                         </div>
                         <div class="canvas-toolbar card">
                             <div class="tool-group">
-                                <button onclick="window.setTool('draw')" id="tool-draw" class="tool active" title="Draw">✎</button>
-                                <button onclick="window.setTool('agent')" id="tool-agent" class="tool" title="Place Agent">👤</button>
-                                <input type="color" id="vpColor" value="#ff1e3c" title="Color">
+                                <button onclick="window.setTool('draw')" id="tool-draw" class="tool active"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="window.setTool('agent')" id="tool-agent" class="tool"><i class="fa-solid fa-user"></i></button>
+                                <button onclick="window.setTool('util')" id="tool-util" class="tool"><i class="fa-solid fa-bomb"></i></button>
+                                <input type="color" id="vpColor" value="#ff1e3c">
                             </div>
                             <div class="tool-group">
-                                <button onclick="window.clearPlanner()" class="tool danger" title="Clear All">🗑</button>
-                                <button onclick="window.saveStrategy()" class="tool" title="Download Image">⬇</button>
+                                <button onclick="window.saveStratToDB()" class="tool" title="Save to Cloud"><i class="fa-solid fa-cloud-arrow-up"></i></button>
+                                <button onclick="window.clearPlanner()" class="tool danger"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>
                     </div>
 
                     <div class="strat-side">
                         <div class="card control-panel">
-                            <label class="tag">ACTIVE_THEATER</label>
+                            <label class="tag">THEATER</label>
                             <select id="vpMapSelect" onchange="window.changeMap()" class="dash-input">
                                 <option value="ascent">ASCENT</option>
                                 <option value="bind">BIND</option>
@@ -71,35 +97,68 @@
                                 <option value="lotus">LOTUS</option>
                                 <option value="split">SPLIT</option>
                                 <option value="sunset">SUNSET</option>
+                                <option value="abyss">ABYSS</option>
                             </select>
                         </div>
                         <div class="card control-panel" style="flex-grow: 1;">
-                            <label class="tag">UNIT_DEPLOYMENT</label>
-                            <div id="agent-list" class="agent-grid">
-                                <div style="color: #666; font-size: 0.8rem; padding: 10px;">Loading Database...</div>
-                            </div>
+                            <label class="tag">ASSETS</label>
+                            <div id="agent-list" class="agent-grid">Loading...</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="roster" class="tabView">
-                <div class="card narrow-card">
-                    <h3 class="tag">ACTIVE_OPERATIVES</h3>
-                    <div id="rosList" class="roster-list-grid">
-                        <p style="padding: 20px; color: #666;">Synchronizing with Firebase...</p>
+            <div id="matches" class="tabView">
+                <div class="split-view">
+                    <div class="card">
+                        <h3 class="tag">SCHEDULE OPERATION</h3>
+                        <div class="form-grid">
+                            <input type="text" id="sched-opp" class="dash-input" placeholder="Opponent Name">
+                            <input type="date" id="sched-date" class="dash-input">
+                            <input type="time" id="sched-time" class="dash-input">
+                            <select id="sched-type" class="dash-input">
+                                <option>Scrim</option>
+                                <option>Tournament</option>
+                                <option>Premier</option>
+                                <option>VOD Review</option>
+                            </select>
+                        </div>
+                        <button class="btn primary full-width" onclick="window.scheduleMatch()" style="margin-top:15px;">CONFIRM OPERATION</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="tag">UPCOMING OPS</h3>
+                        <div id="hub-match-list" class="list-container">Loading...</div>
                     </div>
                 </div>
             </div>
 
             <div id="warroom" class="tabView">
-                <div class="card narrow-card">
-                    <h3 class="tag">MISSION_BRIEFING</h3>
-                    <div class="war-room-content">
-                        <p>Awaiting Intelligence Upload...</p>
+                <div class="split-view">
+                    <div class="card narrow-card">
+                        <h3 class="tag">TARGETS</h3>
+                        <button class="btn ghost full-width" onclick="window.createEnemyProfile()" style="margin-bottom:10px;">+ NEW TARGET</button>
+                        <div id="enemy-list" class="list-container"></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="tag" id="warroom-title">SELECT A TARGET</h3>
+                        <div id="warroom-content" style="display:none;">
+                            <div class="threat-level">THREAT LEVEL: <span id="wr-threat">MEDIUM</span></div>
+                            <textarea id="wr-notes" class="dash-input" style="height: 300px; margin-top: 10px;" placeholder="Tactical notes, agent comps, tendencies..."></textarea>
+                            <button class="btn primary" onclick="window.saveEnemyIntel()" style="margin-top:10px;">UPDATE INTEL</button>
+                            <button class="btn ghost" onclick="window.deleteEnemy()" style="margin-top:10px; border-color: red; color: red;">BURN DOSSIER</button>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div id="admin" class="tabView">
+                <div class="card">
+                    <h3 class="tag">PENDING ENLISTMENTS</h3>
+                    <div id="admin-apps-list" class="grid-list">
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 

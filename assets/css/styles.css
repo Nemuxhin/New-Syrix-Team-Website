@@ -23,7 +23,7 @@ body {
     line-height: 1.6;
 }
 
-/* --- REUSABLE UTILS --- */
+/* --- UTILS --- */
 .container {
     padding: 4rem 10%;
 }
@@ -48,7 +48,18 @@ body {
         transform: translateY(0);
     }
 
-/* --- HERO SECTION --- */
+.split-view {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    height: 100%;
+}
+
+.full-width {
+    width: 100%;
+}
+
+/* --- HERO --- */
 .hero {
     height: 100vh;
     display: flex;
@@ -65,8 +76,8 @@ body {
     width: 100%;
     height: 100%;
     z-index: 1;
-    overflow: hidden;
     opacity: 0.4;
+    overflow: hidden;
 }
 
 .video-overlay {
@@ -75,7 +86,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(11,11,11,1) 95%);
+    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, #0b0b0b 100%);
     z-index: 2;
 }
 
@@ -155,13 +166,10 @@ nav {
 
         .nav-links a:hover, .nav-links a.highlight-link {
             color: #fff;
+            border-bottom: 1px solid var(--red);
         }
 
-.highlight-link {
-    border-bottom: 1px solid var(--red);
-}
-
-/* --- STATS BAR --- */
+/* --- STATS --- */
 .stats-bar {
     display: flex;
     justify-content: space-around;
@@ -187,64 +195,7 @@ nav {
         line-height: 1.2;
     }
 
-/* --- GRIDS (News, Teams, Shop) --- */
-.featureGrid, .newsGrid, .shopGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-/* Specific Cards */
-.newsCard {
-    background: var(--card-bg);
-    padding: 25px;
-    border: 1px solid var(--border-soft);
-    border-radius: 4px;
-    transition: transform 0.2s;
-}
-
-    .newsCard:hover {
-        transform: translateY(-5px);
-        border-color: var(--red);
-    }
-
-.feature {
-    height: 300px;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: flex-end;
-    padding: 20px;
-}
-
-.feature-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-    z-index: 1;
-    transition: transform 0.4s;
-    filter: grayscale(1);
-}
-
-.feature:hover .feature-bg {
-    transform: scale(1.05);
-    filter: grayscale(0);
-}
-
-.feature span {
-    position: relative;
-    z-index: 2;
-    font-weight: 800;
-    font-size: 1.2rem;
-    background: #000;
-    padding: 5px 10px;
-}
-
-/* --- DASHBOARD (HUB) --- */
+/* --- DASHBOARD --- */
 .dashboard-root {
     background: var(--darker);
     min-height: 100vh;
@@ -262,7 +213,7 @@ nav {
 
 .auth-card {
     width: 100%;
-    max-width: 400px;
+    max-width: 450px;
     text-align: center;
 }
 
@@ -297,6 +248,7 @@ nav {
     font-size: 0.7rem;
     cursor: pointer;
     border-radius: 4px;
+    transition: 0.2s;
 }
 
     .tab-link.active {
@@ -304,24 +256,79 @@ nav {
         color: white;
     }
 
-/* Stratbook Layout */
+/* --- CARDS & GRIDS --- */
+.featureGrid, .newsGrid, .shopGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-soft);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.newsCard {
+    background: #111;
+    padding: 20px;
+    border-left: 2px solid var(--red);
+}
+
+.roster-card {
+    position: relative;
+    height: 300px;
+    overflow: hidden;
+    background: #111;
+    display: flex;
+    align-items: flex-end;
+    padding: 15px;
+    border-bottom: 4px solid var(--red);
+}
+
+    .roster-card img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.6;
+        transition: 0.3s;
+    }
+
+    .roster-card:hover img {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+
+.roster-info {
+    position: relative;
+    z-index: 2;
+}
+
+    .roster-info h3 {
+        font-size: 1.5rem;
+        font-weight: 900;
+        line-height: 1;
+        text-transform: uppercase;
+    }
+
+    .roster-info span {
+        font-size: 0.7rem;
+        background: var(--red);
+        padding: 2px 6px;
+        font-weight: bold;
+    }
+
+/* --- CANVAS --- */
 .stratbook-container {
     display: grid;
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: 1fr 300px;
     gap: 20px;
     height: calc(100vh - 150px);
-}
-
-.strat-main {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.strat-side {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
 }
 
 .canvas-wrapper {
@@ -329,7 +336,6 @@ nav {
     flex-grow: 1;
     background: #000;
     border: 1px solid var(--border-soft);
-    border-radius: 8px;
     overflow: hidden;
 }
 
@@ -353,12 +359,6 @@ nav {
     background: #111;
 }
 
-.tool-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
 .tool {
     width: 40px;
     height: 40px;
@@ -367,9 +367,6 @@ nav {
     color: #fff;
     border-radius: 4px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
     .tool.active {
@@ -377,17 +374,15 @@ nav {
         color: var(--red);
     }
 
-    .tool.danger {
-        color: #ff4444;
-    }
-
-/* Inputs */
+/* --- INPUTS & ADMIN --- */
 .dash-input {
     width: 100%;
     background: #000;
     border: 1px solid #333;
     color: white;
-    padding: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 4px;
 }
 
 .btn {
@@ -396,7 +391,6 @@ nav {
     text-transform: uppercase;
     border: none;
     cursor: pointer;
-    border-radius: 2px;
 }
 
     .btn.primary {
@@ -410,90 +404,32 @@ nav {
         color: white;
     }
 
-.full-width {
-    width: 100%;
+.app-item {
+    background: #1a1a1a;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 3px solid yellow;
 }
 
-/* Agent Grid */
-.agent-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
+.app-actions {
+    display: flex;
     gap: 10px;
-    max-height: 400px;
-    overflow-y: auto;
+    margin-top: 10px;
 }
 
-.agent-icon img {
-    width: 100%;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    opacity: 0.5;
+.match-item {
+    background: #0a0a0a;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--red);
+    display: flex;
+    justify-content: space-between;
 }
 
-    .agent-icon img:hover {
-        opacity: 1;
-        border-color: var(--red);
-    }
-
-/* --- MODAL --- */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-    .modal.active {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-.modalBackdrop {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-}
-
-.modalCard {
-    position: relative;
-    z-index: 2010;
-    width: 80%;
-    max-width: 1000px;
-    aspect-ratio: 16/9;
-    background: #000;
-}
-
-.modalFrame, iframe {
-    width: 100%;
-    height: 100%;
-}
-
-.modalClose {
-    position: absolute;
-    top: -40px;
-    right: 0;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 2rem;
-    cursor: pointer;
-}
-
-/* --- MOBILE RESPONSIVE --- */
+/* --- MOBILE --- */
 @media (max-width: 768px) {
-    .heroContent h1 {
-        font-size: 3rem;
-    }
-
-    .stats-bar {
-        flex-direction: column;
-        gap: 20px;
+    .split-view {
+        grid-template-columns: 1fr;
     }
 
     .stratbook-container {
@@ -503,16 +439,15 @@ nav {
 
     .canvas-wrapper {
         aspect-ratio: 16/9;
-        height: auto;
+    }
+
+    .stats-bar {
+        flex-direction: column;
+        gap: 20px;
     }
 
     .dash-nav {
         flex-direction: column;
-        gap: 15px;
-    }
-
-    .horizontal-tabs {
-        width: 100%;
-        justify-content: center;
+        gap: 10px;
     }
 }
