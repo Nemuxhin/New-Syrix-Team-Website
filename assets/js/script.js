@@ -1,4 +1,4 @@
-// --- 1. FIREBASE CONFIG ---
+// --- 1. CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyAcZy0oY6fmwJ4Lg9Ac-Bq__eMukMC_u0w",
     authDomain: "syrix-team-schedule.firebaseapp.com",
@@ -11,45 +11,53 @@ const firebaseConfig = {
 let db, auth;
 let currentTool = 'draw';
 let activeAgent = null;
-let history = []; // For Undo functionality
 
-// --- 2. CORE INITIALIZATION ---
+// --- 2. INITIALIZATION ENGINE ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 2a. Visual Reveal (Fail-safe for Landing Page)
+    // Reveal Visuals (Landing Page)
     const runReveal = () => {
         document.querySelectorAll('.reveal').forEach(el => {
-            if (el.getBoundingClientRect().top < window.innerHeight - 50) el.classList.add('active');
+            const rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight - 50) el.classList.add('active');
         });
     };
     window.addEventListener('scroll', runReveal);
-    setTimeout(runReveal, 100);
+    setTimeout(runReveal, 150);
 
-    // 2b. Firebase Boot
-    try {
-        if (typeof firebase !== 'undefined') {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            auth = firebase.auth();
+    // Initialize Firebase v8
+    if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
 
-            auth.onAuthStateChanged(user => {
-                const lock = document.getElementById('hubLocked');
-                const unlocked = document.getElementById('hubUnlocked');
-                if (user && lock) {
-                    lock.style.display = 'none';
-                    unlocked.style.display = 'grid';
-                    document.getElementById('userProfile').innerText = `OPERATOR: ${user.displayName.toUpperCase()}`;
-                    initHubLogic();
-                    syncRoster();
-                }
-            });
+        // Auth State Listener
+        auth.onAuthStateChanged(user => {
+            const lock = document.getElementById('hubLocked');
+            const unlocked = document.getElementById('hubUnlocked');
 
-            if (document.getElementById('stat-record')) loadHomeData();
-        }
-    } catch (e) { console.warn("Firebase initialization pending..."); }
+            if (user) {
+                if (lock) lock.style.display = 'none';
+                if (unlocked) unlocked.style.display = 'block';
+
+                const profile = document.getElementById('userProfile');
+                if (profile) profile.innerText = user.displayName ? user.displayName.toUpperCase() : "OPERATOR";
+
+                initPlanner();
+                syncHubData();
+            } else {
+                if (lock) lock.style.display = 'flex';
+                if (unlocked) unlocked.style.display = 'none';
+            }
+        });
+
+        // Load Landing Page Data
+        if (document.getElementById('stat-record')) loadLandingStats();
+    }
 });
 
 // --- 3. LANDING PAGE LOGIC ---
-function loadHomeData() {
+function loadLandingStats() {
+    // Record & Winrate
     db.collection("events").onSnapshot(snap => {
         let w = 0, l = 0;
         snap.forEach(doc => {
@@ -58,18 +66,19 @@ function loadHomeData() {
                 (parseInt(r.myScore) > parseInt(r.enemyScore)) ? w++ : l++;
             }
         });
-        const recordEl = document.getElementById('stat-record');
-        const winrateEl = document.getElementById('stat-winrate');
-        if (recordEl) recordEl.innerText = `${w}W - ${l}L`;
-        if (winrateEl) winrateEl.innerText = `${Math.round((w / (w + l || 1)) * 100)}%`;
+        const rec = document.getElementById('stat-record');
+        const wr = document.getElementById('stat-winrate');
+        if (rec) rec.innerText = `${w}W - ${l}L`;
+        if (wr) wr.innerText = `${Math.round((w / (w + l || 1)) * 100)}%`;
     });
 
+    // Roster Count
     db.collection("roster").onSnapshot(snap => {
-        const rosterStat = document.getElementById('stat-roster');
-        if (rosterStat) rosterStat.innerText = snap.size;
+        const ros = document.getElementById('stat-roster');
+        if (ros) ros.innerText = snap.size;
     });
 
-    // Landing Page News Feed
+    // News Feed
     db.collection("news").orderBy("date", "desc").limit(3).onSnapshot(snap => {
         const feed = document.getElementById('live-news');
         if (!feed) return;
@@ -78,175 +87,175 @@ function loadHomeData() {
             const n = doc.data();
             feed.innerHTML += `
                 <div class="newsCard">
-                    <small style="color:var(--red); font-weight:bold;">${n.date || ''}</small>
-                    <h3 style="margin-top:5px;">${n.title}</h3>
-                    <p style="font-size:0.8rem; color:var(--text-muted);">${n.body ? n.body.substring(0, 100) + '...' : ''}</p>
+                    <small style="color:var(--red); font-weight:800; letter-spacing:1px;">${n.date || 'SIGNAL_LOST'}</small>
+                    <h3 style="margin: 10px 0;">${n.title}</h3>
+                    <p style="font-size:0.85rem; color:var(--text-muted);">${n.body ? n.body.substring(0, 120) + '...' : ''}</p>
                 </div>`;
         });
     });
 }
 
-// --- 4. HUB NAVIGATION ---
-window.loginWithDiscord = function () {
+// --- 4. HUB INTERFACE LOGIC ---
+window.loginWithDiscord = () => {
     const provider = new firebase.auth.OAuthProvider('oidc.discord');
-    auth.signInWithPopup(provider).catch(err => alert("Auth Error: Check Firebase Authorized Domains."));
+    auth.signInWithPopup(provider).catch(e => {
+        console.error("Auth Error:", e);
+        alert("Authentication failed. Check Firebase Authorized Domains.");
+    });
 };
 
-window.showTab = function (id, btn) {
+window.showTab = (id, btn) => {
     document.querySelectorAll('.tabView').forEach(v => v.style.display = 'none');
-    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
-    document.getElementById(id).style.display = 'block';
-    btn.classList.add('active');
+    document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
+
+    const target = document.getElementById(id);
+    if (target) {
+        target.style.display = 'block';
+        btn.classList.add('active');
+    }
 };
 
-// --- 5. STRATBOOK (PLANNER) LOGIC ---
+// --- 5. STRATBOOK (CANVAS ENGINE) ---
 let canvas, ctx, drawing = false;
 
-function initHubLogic() {
+function initPlanner() {
     canvas = document.getElementById('vpCanvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
-    canvas.width = 1200;
-    canvas.height = 800;
+
+    // Lock Internal Resolution for HD Drawing
+    canvas.width = 1920;
+    canvas.height = 1080;
 
     canvas.onmousedown = (e) => {
-        const r = canvas.getBoundingClientRect();
-        const x = (e.clientX - r.left) * (1200 / r.width);
-        const y = (e.clientY - r.top) * (800 / r.height);
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
         if (currentTool === 'draw') {
-            saveHistory();
             drawing = true;
             ctx.beginPath();
             ctx.moveTo(x, y);
         } else if (currentTool === 'agent' && activeAgent) {
-            saveHistory();
-            placeAgentOnCanvas(x, y);
+            stampAgent(x, y);
         }
     };
 
     canvas.onmousemove = (e) => {
         if (!drawing || currentTool !== 'draw') return;
-        const r = canvas.getBoundingClientRect();
-        ctx.lineTo((e.clientX - r.left) * (1200 / r.width), (e.clientY - r.top) * (800 / r.height));
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+        ctx.lineTo(x, y);
         ctx.strokeStyle = document.getElementById('vpColor').value;
-        ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.stroke();
     };
 
     window.onmouseup = () => { drawing = false; };
-    loadAgentIcons();
+    loadAgentPalette();
 }
 
-window.setTool = (tool) => {
-    currentTool = tool;
-    document.querySelectorAll('.tool').forEach(t => t.classList.remove('active'));
-    document.getElementById(`tool-${tool}`).classList.add('active');
+window.setTool = (t) => {
+    currentTool = t;
+    document.querySelectorAll('.tool').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tool-${t}`).classList.add('active');
 };
 
-async function loadAgentIcons() {
-    const res = await fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true');
-    const json = await res.json();
-    const list = document.getElementById('agent-list');
-    if (list) {
-        list.innerHTML = json.data.map(a => `
-            <div class="agent-icon" onclick="window.selectAgent('${a.displayIcon}')">
-                <img src="${a.displayIcon}">
-            </div>`).join('');
-    }
+async function loadAgentPalette() {
+    try {
+        const res = await fetch('https://valorant-api.com/v1/agents?isPlayableCharacter=true');
+        const json = await res.json();
+        const palette = document.getElementById('agent-list');
+        if (palette) {
+            palette.innerHTML = json.data.map(a => `
+                <div class="agent-icon" onclick="window.prepAgent('${a.displayIcon}')">
+                    <img src="${a.displayIcon}" title="${a.displayName}">
+                </div>`).join('');
+        }
+    } catch (e) { console.error("Agent API Failure"); }
 }
 
-window.selectAgent = (iconUrl) => {
-    activeAgent = iconUrl;
+window.prepAgent = (url) => {
+    activeAgent = url;
     window.setTool('agent');
 };
 
-function placeAgentOnCanvas(x, y) {
+function stampAgent(x, y) {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = activeAgent;
     img.onload = () => {
-        ctx.drawImage(img, x - 25, y - 25, 50, 50);
-        // Draw selection ring
-        ctx.strokeStyle = '#ff1e3c';
-        ctx.lineWidth = 2;
+        ctx.drawImage(img, x - 50, y - 50, 100, 100);
+        ctx.strokeStyle = "#ff1e3c";
+        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(x, y, 26, 0, Math.PI * 2);
+        ctx.arc(x, y, 52, 0, Math.PI * 2);
         ctx.stroke();
     };
 }
 
-window.clearPlanner = () => {
-    saveHistory();
-    ctx.clearRect(0, 0, 1200, 800);
-};
-
-window.undoPlanner = () => {
-    if (history.length > 0) {
-        const lastState = history.pop();
-        const img = new Image();
-        img.src = lastState;
-        img.onload = () => {
-            ctx.clearRect(0, 0, 1200, 800);
-            ctx.drawImage(img, 0, 0);
-        };
-    }
-};
-
-function saveHistory() {
-    history.push(canvas.toDataURL());
-    if (history.length > 20) history.shift(); // Limit memory usage
-}
+window.clearPlanner = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 window.changeMap = () => {
-    const map = document.getElementById('vpMapSelect').value;
+    const val = document.getElementById('vpMapSelect').value;
     const maps = {
         ascent: "7eaecc1b-4337-bbf6-6130-03a4d7090581",
         bind: "2c9d57bc-4f8a-4e22-8e6b-b784297d04a5",
         haven: "2bee0ca3-4471-9193-c139-3a1154054a16",
-        lotus: "2fe4ed3d-450f-aa44-0b05-a2e116a401f1",
-        abyss: "22050f2d-4d43-2646-63c3-6385b0d4530d"
+        lotus: "2fe4ed3d-450f-aa44-0b05-a2e116a401f1"
     };
-    document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/${maps[map]}/stylizedicon.png`;
+    const img = document.getElementById('vpMapImg');
+    if (img) img.src = `https://media.valorant-api.com/maps/${maps[val] || maps.ascent}/stylizedicon.png`;
     window.clearPlanner();
 };
 
 window.saveStrategy = () => {
     const link = document.createElement('a');
-    link.download = `SYRIX_STRAT_${Date.now()}.png`;
+    link.download = `SYRIX_PLAN_${Date.now()}.png`;
     link.href = canvas.toDataURL();
     link.click();
 };
 
-// --- 6. ROSTER SYNC ---
-function syncRoster() {
+// --- 6. DATA SYNC ---
+function syncHubData() {
     const rosList = document.getElementById('rosList');
-    if (!rosList) return;
-
-    db.collection("roster").onSnapshot(snap => {
-        rosList.innerHTML = "";
-        snap.forEach(doc => {
-            const p = doc.data();
-            rosList.innerHTML += `
-                <div class="hubPanel" style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <img src="${p.pfp || ''}" style="width:40px; height:40px; border-radius:50%; border:1px solid var(--red);" onerror="this.style.display='none'">
-                        <div>
-                            <div style="font-weight:bold; font-size:1.1rem;">${doc.id}</div>
-                            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">${p.role} // ${p.rank}</div>
+    if (rosList) {
+        db.collection("roster").onSnapshot(snap => {
+            rosList.innerHTML = "";
+            snap.forEach(doc => {
+                const p = doc.data();
+                rosList.innerHTML += `
+                    <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <img src="${p.pfp || ''}" style="width:40px; height:40px; border-radius:50%; border:1px solid var(--red);">
+                            <div>
+                                <div style="font-weight:900;">${doc.id}</div>
+                                <div style="font-size:0.6rem; color:var(--red); letter-spacing:1px;">${p.role} // ${p.rank}</div>
+                            </div>
                         </div>
-                    </div>
-                    <div style="font-family:monospace; color:var(--red); font-size:0.8rem;">${p.ingameRole || 'FLEX'}</div>
-                </div>`;
+                    </div>`;
+            });
         });
-    });
+    }
 }
 
-// --- 7. TRAILER UTILS ---
+// --- 7. TRAILER MODAL ---
 window.openTrailer = () => {
-    document.getElementById('modal').classList.add('active');
-    document.getElementById('trailerFrame').src = "https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1";
+    const m = document.getElementById('modal');
+    const f = document.getElementById('trailerFrame');
+    if (m && f) {
+        m.classList.add('active');
+        f.src = "https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1";
+    }
 };
 window.closeTrailer = () => {
-    document.getElementById('modal').classList.remove('active');
-    document.getElementById('trailerFrame').src = "";
+    const m = document.getElementById('modal');
+    const f = document.getElementById('trailerFrame');
+    if (m && f) {
+        m.classList.remove('active');
+        f.src = "";
+    }
 };

@@ -10,84 +10,84 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
-<body class="hub-root">
+<body class="dashboard-root">
 
-    <div id="hubLocked" class="hubWrap">
-        <div class="hubPanel terminal-card">
-            <div class="glitch-title">SYRIX_PROTOCOL</div>
-            <p>Accessing restricted unit data...</p>
-            <button class="btn primary-long" onclick="window.loginWithDiscord()">AUTHENTICATE_SESSION</button>
+    <div id="hubLocked" class="hubWrap" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <div class="card" style="text-align: center; max-width: 400px; width: 100%;">
+            <h2 style="letter-spacing: 5px; margin-bottom: 25px; color: var(--red);">SYRIX_PROTOCOL</h2>
+            <button class="btn primary" style="width: 100%;" onclick="window.loginWithDiscord()">AUTHENTICATE_SESSION</button>
         </div>
     </div>
 
-    <div id="hubUnlocked" style="display: none;" class="command-grid">
-
-        <aside class="side-nav">
-            <div class="nav-brand">SYRIX<span>//</span>HUB</div>
-            <nav class="nav-links">
-                <button class="nav-item active" onclick="window.showTab('planner', this)">STRATBOOK</button>
-                <button class="nav-item" onclick="window.showTab('roster', this)">UNIT_LOG</button>
-                <button class="nav-item" onclick="window.showTab('intel', this)">ENEMY_INTEL</button>
-            </nav>
-            <div class="nav-footer">
-                <div id="userProfile" class="user-status">OPERATOR: ...</div>
-                <button class="logout-link" onclick="firebase.auth().signOut()">TERMINATE_SESSION</button>
+    <div id="hubUnlocked" style="display: none;">
+        <header class="dash-nav">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <button class="logout-pill" style="padding: 5px 12px; border-radius: 4px;" onclick="window.location.href='index.html'">←</button>
+                <div class="logo">SYRIX <span>HUB</span></div>
             </div>
-        </aside>
 
-        <main class="content-area">
+            <nav class="horizontal-tabs">
+                <button class="tab-link active" onclick="window.showTab('planner', this)">STRATBOOK</button>
+                <button class="tab-link" onclick="window.showTab('roster', this)">ROSTER</button>
+                <button class="tab-link" onclick="window.showTab('warroom', this)">WAR ROOM</button>
+            </nav>
 
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div id="userProfile" style="font-size: 0.7rem; font-weight: 900; color: var(--text-muted);">OPERATOR</div>
+                <button class="logout-pill" onclick="firebase.auth().signOut()">LOG OUT</button>
+            </div>
+        </header>
+
+        <main class="dash-content">
             <div id="planner" class="tabView active">
-                <div class="planner-ui">
-                    <div class="canvas-container">
-                        <canvas id="vpCanvas"></canvas>
-                        <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png" alt="Map Overlay">
-
+                <div class="stratbook-container">
+                    <div class="strat-main">
+                        <div class="canvas-wrapper">
+                            <canvas id="vpCanvas"></canvas>
+                            <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png">
+                        </div>
                         <div class="canvas-toolbar">
-                            <button onclick="window.setTool('draw')" id="tool-draw" class="tool active" title="Draw">✎</button>
-                            <button onclick="window.setTool('agent')" id="tool-agent" class="tool" title="Place Agent">👤</button>
-                            <button onclick="window.undoPlanner()" class="tool" title="Undo">⤺</button>
-                            <button onclick="window.clearPlanner()" class="tool danger" title="Wipe Board">🗑</button>
-                            <input type="color" id="vpColor" value="#ff1e3c">
+                            <button onclick="window.setTool('draw')" id="tool-draw" class="tool active">✎</button>
+                            <button onclick="window.setTool('agent')" id="tool-agent" class="tool">👤</button>
+                            <button onclick="window.clearPlanner()" class="tool danger">🗑</button>
+                            <input type="color" id="vpColor" value="#ff1e3c" style="width: 40px; height: 48px; border: none; background: none;">
                         </div>
                     </div>
 
-                    <div class="planner-sidebar hubPanel">
-                        <label class="tag">ACTIVE_THEATER</label>
-                        <select id="vpMapSelect" onchange="window.changeMap()" class="tactical-input">
-                            <option value="ascent">ASCENT</option>
-                            <option value="bind">BIND</option>
-                            <option value="haven">HAVEN</option>
-                            <option value="lotus">LOTUS</option>
-                            <option value="abyss">ABYSS</option>
-                        </select>
-
-                        <label class="tag" style="margin-top: 25px;">UNIT_DEPLOYMENT</label>
-                        <div class="agent-palette" id="agent-list">
+                    <div class="strat-side">
+                        <div class="card" style="margin-bottom: 20px;">
+                            <label class="tag">ACTIVE_THEATER</label>
+                            <select id="vpMapSelect" onchange="window.changeMap()" class="dash-input">
+                                <option value="ascent">ASCENT</option>
+                                <option value="bind">BIND</option>
+                                <option value="haven">HAVEN</option>
+                                <option value="lotus">LOTUS</option>
+                            </select>
                         </div>
-
-                        <button class="btn primary-long" style="margin-top: auto;" onclick="window.saveStrategy()">EXPORT_STRAT</button>
+                        <div class="card">
+                            <label class="tag">UNIT_DEPLOYMENT</label>
+                            <div id="agent-list" class="agent-grid">
+                            </div>
+                        </div>
+                        <button class="btn primary" style="width: 100%; margin-top: 20px;" onclick="window.saveStrategy()">EXPORT STRAT</button>
                     </div>
                 </div>
             </div>
 
             <div id="roster" class="tabView">
-                <div class="hubPanel" style="max-width: 800px; margin: 0 auto;">
-                    <h2 class="section-header">ACTIVE_OPERATIVES</h2>
-                    <div id="rosList" class="roster-stack">
+                <div class="card" style="max-width: 900px; margin: 0 auto;">
+                    <h3 class="tag" style="margin-bottom: 20px;">ACTIVE_OPERATIVES</h3>
+                    <div id="rosList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
                     </div>
                 </div>
             </div>
 
-            <div id="intel" class="tabView">
-                <div class="hubPanel" style="max-width: 800px; margin: 0 auto;">
-                    <h2 class="section-header">ENEMY_DOSSIER</h2>
-                    <div id="intelList" class="intel-container">
-                        <p style="color: var(--text-muted); font-size: 0.8rem;">Awaiting field intelligence report...</p>
-                    </div>
+            <div id="warroom" class="tabView">
+                <div class="card" style="max-width: 900px; margin: 0 auto;">
+                    <h3 class="tag">INTEL_FEED</h3>
+                    <p style="margin-top: 20px; color: var(--text-muted);">Awaiting mission briefing...</p>
                 </div>
             </div>
-
         </main>
     </div>
 

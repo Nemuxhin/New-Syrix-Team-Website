@@ -4,10 +4,9 @@
     --text-main: #ece8e1;
     --text-muted: rgba(236, 232, 225, 0.4);
     --border-soft: rgba(255, 255, 255, 0.05);
-    --nav-height: 80px;
 }
 
-/* --- RESET & BASE --- */
+/* --- RESET & GLOBAL --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -23,13 +22,38 @@ body {
     line-height: 1.6;
 }
 
-/* --- NAVIGATION (Landing Page) --- */
+/* --- HERO VIDEO BACKGROUND (UNBREAKABLE) --- */
+.hero-video-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    opacity: 0.15;
+    filter: grayscale(1);
+}
+
+.hero-yt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    object-fit: cover; /* Forces video to cover the frame */
+}
+
+/* --- LANDING PAGE NAVIGATION --- */
 nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 10%;
-    height: var(--nav-height);
+    padding: 30px 10%;
     position: fixed;
     width: 100%;
     z-index: 100;
@@ -62,7 +86,7 @@ nav a {
         color: #fff;
     }
 
-/* --- HERO SECTION --- */
+/* --- HERO CONTENT --- */
 .hero {
     height: 100vh;
     display: flex;
@@ -72,154 +96,136 @@ nav a {
 }
 
 .heroContent h1 {
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-size: clamp(2.2rem, 5vw, 3.8rem); /* Slightly smaller as requested */
     line-height: 1.1;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: -1px;
+    margin-bottom: 20px;
 }
 
-/* --- TACTICAL HUB (The Fix for the Mess) --- */
-.hub-root {
+.heroContent p {
+    color: var(--text-muted);
+    max-width: 450px;
+    margin-bottom: 30px;
+}
+
+/* --- DASHBOARD HUB STYLING (THE NEW LOOK) --- */
+.dashboard-root {
     background: #050505;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden; /* Prevents double scrollbars */
-}
-
-/* Force the grid to stay separated */
-.command-grid {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    height: 100vh;
-    width: 100%;
-    position: relative;
-}
-
-/* Sidebar Fix: Must be flex to keep items from stacking in center */
-.side-nav {
-    background: #080808;
-    border-right: 1px solid var(--border-soft);
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Keeps items at top */
-    align-items: stretch;
-    padding: 50px 30px;
-    height: 100vh;
-    position: relative; /* Fixed from your screenshot error */
 }
 
-.nav-brand {
-    font-weight: 900;
-    letter-spacing: 4px;
-    font-size: 1.1rem;
-    margin-bottom: 60px;
-    color: #fff;
-}
-
-    .nav-brand span {
-        color: var(--red);
-    }
-
-.nav-links {
+.dash-nav {
     display: flex;
-    flex-direction: column;
-    gap: 15px;
-    flex-grow: 1;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 40px;
+    background: #0a0a0a;
+    border-bottom: 1px solid var(--border-soft);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.nav-item {
+.horizontal-tabs {
+    display: flex;
+    gap: 8px;
+    background: #000;
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--border-soft);
+}
+
+.tab-link {
     background: transparent;
     border: none;
     color: var(--text-muted);
-    text-align: left;
-    padding: 18px 25px;
+    padding: 10px 24px;
     font-weight: 800;
-    font-size: 0.7rem;
-    letter-spacing: 3px;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: 0.2s;
 }
 
-    .nav-item:hover, .nav-item.active {
-        background: rgba(255, 30, 60, 0.05);
-        color: var(--red);
+    .tab-link.active {
+        background: var(--red);
+        color: #fff;
     }
 
-/* Content Area Fix */
-.content-area {
-    height: 100vh;
-    overflow-y: auto;
-    position: relative;
-    padding: 0;
+/* --- CONTENT CARDS --- */
+.dash-content {
+    padding: 30px 40px;
 }
 
-/* Tab Management */
-.tabView {
-    display: none;
-    height: 100%;
-    width: 100%;
-}
-
-    .tabView.active {
-        display: block;
-    }
-
-/* Planner UI Fix */
-.planner-ui {
+.stratbook-container {
     display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 0; /* Let containers handle padding */
-    height: 100vh;
+    grid-template-columns: 1fr 360px; /* Map left, Controls right */
+    gap: 25px;
+    max-width: 1800px;
+    margin: 0 auto;
 }
 
-.canvas-container {
+.card {
+    background: #0f0f0f;
+    border: 1px solid var(--border-soft);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* --- CANVAS & PLANNER --- */
+.canvas-wrapper {
     position: relative;
     background: #000;
-    border: 1px solid var(--border-soft);
+    border-radius: 8px;
     overflow: hidden;
-    height: 100vh;
+    aspect-ratio: 16/9;
+    border: 1px solid var(--border-soft);
 }
 
 #vpCanvas {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 10;
     width: 100%;
     height: 100%;
+    z-index: 5;
 }
 
 #vpMapImg {
     width: 100%;
     height: 100%;
-    object-image-fit: contain;
-    opacity: 0.35;
+    object-fit: contain;
+    opacity: 0.4;
 }
 
-/* Floating Toolbar Fix: Absolute to container, not screen */
 .canvas-toolbar {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
+    margin-top: 20px;
     background: #111;
-    padding: 12px;
+    padding: 15px;
     border: 1px solid var(--border-soft);
     display: flex;
+    justify-content: center;
     gap: 15px;
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
 .tool {
-    width: 45px;
-    height: 45px;
+    width: 48px;
+    height: 48px;
     background: #1a1a1a;
     border: 1px solid var(--border-soft);
     color: #fff;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
 }
 
     .tool.active {
@@ -228,14 +234,42 @@ nav a {
         background: rgba(255, 30, 60, 0.1);
     }
 
-/* Sidebar in Planner */
-.planner-sidebar {
-    padding: 40px;
-    background: #050505;
-    border-left: 1px solid var(--border-soft);
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
+/* --- BUTTONS & INPUTS --- */
+.btn {
+    padding: 16px 35px;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+    .btn.primary {
+        background: var(--red);
+        color: #fff;
+    }
+
+    .btn.ghost {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #fff;
+    }
+
+    .btn:hover {
+        background: #fff;
+        color: #000;
+        transform: translateY(-3px);
+    }
+
+.dash-input {
+    width: 100%;
+    background: #000;
+    color: #fff;
+    border: 1px solid var(--border-soft);
+    padding: 14px;
+    border-radius: 8px;
+    margin-top: 10px;
 }
 
 .tag {
@@ -243,25 +277,25 @@ nav a {
     font-weight: 900;
     color: var(--red);
     letter-spacing: 2px;
-    margin-bottom: 8px;
+    text-transform: uppercase;
 }
 
-.tactical-input {
-    width: 100%;
-    background: #000;
-    border: 1px solid var(--border-soft);
-    color: #fff;
-    padding: 15px;
-}
-
-/* Buttons */
-.btn.primary-long {
-    width: 100%;
-    background: var(--red);
-    color: #fff;
+.logout-pill {
+    background: rgba(255, 30, 60, 0.1);
+    color: var(--red);
+    border: 1px solid var(--red);
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 0.7rem;
     font-weight: 900;
-    padding: 18px;
-    letter-spacing: 2px;
-    border: none;
     cursor: pointer;
 }
+
+/* --- TAB VISIBILITY --- */
+.tabView {
+    display: none;
+}
+
+    .tabView.active {
+        display: block;
+    }
