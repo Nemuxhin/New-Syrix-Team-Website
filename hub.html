@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SYRIX // Command Center</title>
     <link rel="stylesheet" href="assets/css/styles.css">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -20,6 +21,7 @@
     </div>
 
     <div id="hubUnlocked" style="display: none;" class="command-grid">
+
         <aside class="side-nav">
             <div class="nav-brand">SYRIX<span>//</span>HUB</div>
             <nav class="nav-links">
@@ -34,17 +36,18 @@
         </aside>
 
         <main class="content-area">
+
             <div id="planner" class="tabView active">
                 <div class="planner-ui">
                     <div class="canvas-container">
                         <canvas id="vpCanvas"></canvas>
-                        <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png">
+                        <img id="vpMapImg" src="https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6130-03a4d7090581/stylizedicon.png" alt="Map Overlay">
 
                         <div class="canvas-toolbar">
-                            <button onclick="window.setTool('draw')" id="tool-draw" class="tool active">✎</button>
-                            <button onclick="window.setTool('select')" id="tool-select" class="tool">⬚</button>
-                            <button onclick="window.undoPlanner()" class="tool">⤺</button>
-                            <button onclick="window.clearPlanner()" class="tool danger">🗑</button>
+                            <button onclick="window.setTool('draw')" id="tool-draw" class="tool active" title="Draw">✎</button>
+                            <button onclick="window.setTool('agent')" id="tool-agent" class="tool" title="Place Agent">👤</button>
+                            <button onclick="window.undoPlanner()" class="tool" title="Undo">⤺</button>
+                            <button onclick="window.clearPlanner()" class="tool danger" title="Wipe Board">🗑</button>
                             <input type="color" id="vpColor" value="#ff1e3c">
                         </div>
                     </div>
@@ -69,11 +72,22 @@
             </div>
 
             <div id="roster" class="tabView">
-                <div class="hubPanel" style="max-width: 800px;">
+                <div class="hubPanel" style="max-width: 800px; margin: 0 auto;">
                     <h2 class="section-header">ACTIVE_OPERATIVES</h2>
-                    <div id="rosList" class="roster-stack"></div>
+                    <div id="rosList" class="roster-stack">
+                    </div>
                 </div>
             </div>
+
+            <div id="intel" class="tabView">
+                <div class="hubPanel" style="max-width: 800px; margin: 0 auto;">
+                    <h2 class="section-header">ENEMY_DOSSIER</h2>
+                    <div id="intelList" class="intel-container">
+                        <p style="color: var(--text-muted); font-size: 0.8rem;">Awaiting field intelligence report...</p>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 

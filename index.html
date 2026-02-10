@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SYRIX — Built Under Pressure</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -15,13 +16,17 @@
         <ul>
             <li><a href="#teams">Teams</a></li>
             <li><a href="#news">News</a></li>
+            <li><a href="#shop">Shop</a></li>
             <li><a href="hub.html">Hub</a></li>
         </ul>
     </nav>
 
     <section class="hero">
         <div class="hero-video-wrap">
-            <iframe class="hero-yt" src="https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1&mute=1&controls=0&rel=0&playsinline=1&modestbranding=1&iv_load_policy=3&loop=1&playlist=y9zweO_hU1U" frameborder="0"></iframe>
+            <iframe class="hero-yt"
+                    src="https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1&mute=1&controls=0&rel=0&playsinline=1&modestbranding=1&iv_load_policy=3&loop=1&playlist=y9zweO_hU1U"
+                    frameborder="0"
+                    allow="autoplay; encrypted-media"></iframe>
         </div>
         <div class="heroContent reveal">
             <h1>BUILT UNDER<br>PRESSURE</h1>
@@ -35,27 +40,58 @@
 
     <section id="live-stats" class="reveal">
         <div class="stats-bar">
-            <div class="stat-item"><small>Record</small><div id="stat-record">0W - 0L</div></div>
-            <div class="stat-item"><small>Win Rate</small><div id="stat-winrate">0%</div></div>
-            <div class="stat-item"><small>Units</small><div id="stat-roster">0</div></div>
+            <div class="stat-item">
+                <small>Record</small>
+                <div id="stat-record">--W - --L</div>
+            </div>
+            <div class="stat-item">
+                <small>Win Rate</small>
+                <div id="stat-winrate">--%</div>
+            </div>
+            <div class="stat-item">
+                <small>Active Units</small>
+                <div id="stat-roster">--</div>
+            </div>
         </div>
     </section>
 
     <section id="teams">
         <h2 class="sectionTitle reveal">Units</h2>
         <div class="featureGrid reveal">
-            <div class="feature"><img src="https://images.unsplash.com/photo-1605902711622-cfb43c44367f"><span>VALORANT</span></div>
+            <div class="feature">
+                <img src="https://images.unsplash.com/photo-1605902711622-cfb43c44367f" alt="Valorant">
+                <span>VALORANT PREMIER</span>
+            </div>
             <div class="feature"><span>REDACTED</span></div>
             <div class="feature"><span>REDACTED</span></div>
         </div>
     </section>
 
     <section id="news">
-        <h2 class="sectionTitle reveal">Sitrep</h2>
+        <h2 class="sectionTitle reveal">Latest Sitrep</h2>
         <div class="newsGrid reveal" id="live-news">
             <div class="newsCard">Connecting to HQ...</div>
         </div>
     </section>
+
+    <section id="shop">
+        <h2 class="sectionTitle reveal">Shop</h2>
+        <div class="shopGrid reveal">
+            <div class="product">
+                <img src="https://images.unsplash.com/photo-1520975922203-b9a43a6f2d9c" alt="Hoodie">
+                <div class="price">Blackout Hoodie — €69</div>
+            </div>
+            <div class="product">
+                <img src="https://images.unsplash.com/photo-1520975698519-59cdb7a3d9b3" alt="Tee">
+                <div class="price">Syrix Tee — €35</div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <span>© 2026 SYRIX ESPORTS</span>
+        <span>BLACK • RED • VALORANT</span>
+    </footer>
 
     <div class="modal" id="modal">
         <div class="modalBackdrop" onclick="window.closeTrailer()"></div>
