@@ -94,12 +94,14 @@
                             <div id="abs-list" class="list-container small-list" style="margin-top:15px;"></div>
                         </div>
                     </div>
+
                     <div class="col-mid">
                         <div class="card full-height">
                             <h3 class="tag">UPCOMING OPERATIONS <span class="badge" id="ops-badge">0 ACTIVE</span></h3>
                             <div id="dash-events" class="list-container">Loading...</div>
                         </div>
                     </div>
+
                     <div class="col-right">
                         <div class="card" style="text-align:center;">
                             <h3 class="tag">WIN RATE</h3>
@@ -107,7 +109,7 @@
                         </div>
                         <div class="card" style="text-align:center;">
                             <h3 class="tag">NEXT MAP</h3>
-                            <div class="big-num" style="font-size:1.5rem;">ASCENT</div>
+                            <div id="stat-nextmap" class="big-num" style="font-size:1.5rem;">TBD</div>
                         </div>
                     </div>
                 </div>
@@ -122,6 +124,7 @@
                             <div class="tool-icon active" onclick="window.tool='draw'; this.classList.add('active')"><i class="fa-solid fa-pen"></i></div>
                             <div class="tool-icon" onclick="window.tool='agent'; this.classList.add('active')"><i class="fa-solid fa-user"></i></div>
                             <input type="color" id="vpColor" value="#ff1e3c" style="width:30px; height:30px; border:none; background:none;">
+                            <div class="tool-icon" onclick="window.saveStrat()"><i class="fa-solid fa-floppy-disk"></i></div>
                             <div class="tool-icon" onclick="window.clearStrat()" style="color:red;"><i class="fa-solid fa-trash"></i></div>
                         </div>
                     </div>
@@ -181,7 +184,16 @@
                             <input type="number" id="m-them" class="dash-input" placeholder="Them">
                         </div>
                         <input type="date" id="m-date" class="dash-input">
-                        <select id="m-map" class="dash-select"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
+                        <select id="m-map" class="dash-input">
+                            <option>Ascent</option>
+                            <option>Bind</option>
+                            <option>Haven</option>
+                            <option>Lotus</option>
+                            <option>Pearl</option>
+                            <option>Split</option>
+                            <option>Sunset</option>
+                            <option>Abyss</option>
+                        </select>
                         <button class="btn primary" onclick="window.addMatch()">ADD RECORD</button>
                     </div>
                     <div class="card">
@@ -214,15 +226,42 @@
             <div id="mapveto" class="tabView">
                 <div class="card full-height">
                     <h3 class="tag">MAP VETO BOARD <button class="btn-xs" style="float:right;" onclick="window.resetVeto()">RESET</button></h3>
-                    <div id="veto-grid" class="veto-grid"></div>
+                    <div id="veto-grid" class="veto-container"></div>
                 </div>
             </div>
 
             <div id="lineups" class="tabView">
-                <div class="card">
-                    <h3 class="tag">LINEUP LIBRARY</h3>
-                    <div class="grid-gallery" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:15px;">
-                        <div class="veto-card" style="display:flex; align-items:center; justify-content:center; border:2px dashed #444;" onclick="alert('Module under construction')">+ ADD</div>
+                <div class="strat-container">
+                    <div class="canvas-wrap" id="lu-map-wrap" onclick="window.mapClickLineup(event)">
+                        <img id="luMapImg" src="" style="width:100%; height:100%; object-fit:contain;">
+                        <div id="lineup-pins"></div>
+                    </div>
+                    <div class="card">
+                        <label class="tag">MAP</label>
+                        <select id="luMapSelect" class="dash-select" onchange="window.changeLineupMap()">
+                            <option value="ascent">ASCENT</option>
+                            <option value="bind">BIND</option>
+                            <option value="haven">HAVEN</option>
+                            <option value="lotus">LOTUS</option>
+                            <option value="split">SPLIT</option>
+                            <option value="sunset">SUNSET</option>
+                            <option value="abyss">ABYSS</option>
+                        </select>
+
+                        <div id="lineup-form" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
+                            <label class="tag">NEW PIN</label>
+                            <input id="lu-title" class="dash-input" placeholder="Title">
+                            <input id="lu-url" class="dash-input" placeholder="URL">
+                            <textarea id="lu-desc" class="dash-input" placeholder="Desc"></textarea>
+                            <button class="btn primary" onclick="window.saveLineup()">SAVE</button>
+                        </div>
+
+                        <div id="lineup-viewer" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
+                            <h3 id="view-lu-title" style="color:white;"></h3>
+                            <a id="view-lu-link" href="#" target="_blank" style="color:var(--red); font-size:0.8rem;">OPEN LINK</a>
+                            <p id="view-lu-desc" style="color:#888; font-size:0.8rem; margin-top:10px;"></p>
+                            <button class="btn ghost" onclick="window.deleteLineup()" style="color:red; margin-top:10px;">DELETE PIN</button>
+                        </div>
                     </div>
                 </div>
             </div>

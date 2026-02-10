@@ -6,6 +6,7 @@
     <title>SYRIX — Built Under Pressure</title>
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -17,7 +18,7 @@
         <ul class="nav-links">
             <li><a href="#about">About</a></li>
             <li><a href="#roster">Roster</a></li>
-            <li><a href="#matches">Schedule</a></li>
+            <li><a href="#matches">Matches</a></li>
             <li><a href="hub.html" class="btn-nav">HUB LOGIN</a></li>
         </ul>
     </nav>
@@ -45,7 +46,6 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:50px;">
             <div>
                 <p style="font-size:1.1rem; margin-bottom:20px;">Syrix was founded on the principle that uncompromising skill and unified strategy conquer all.</p>
-                <p style="color:#888;">We provide a structured environment for players to ascend from Ranked Demons to Organized Professionals.</p>
                 <ul style="margin-top:20px; color:#ccc;">
                     <li><i class="fa-solid fa-check text-red"></i> Structured Practice</li>
                     <li><i class="fa-solid fa-check text-red"></i> VOD Review & Theory</li>
@@ -53,7 +53,7 @@
                 </ul>
             </div>
             <div style="background:#111; border:1px solid #222; padding:30px; display:flex; align-items:center; justify-content:center;">
-                <h3 style="font-size:2rem; font-weight:900; font-style:italic;">DOMINANCE IS A HABIT.</h3>
+                <h3 style="font-size:2rem; font-weight:900; font-style:italic; text-align:center;">DOMINANCE IS<br>A HABIT.</h3>
             </div>
         </div>
     </section>
@@ -61,13 +61,15 @@
     <section id="roster" class="container" style="background:#050505;">
         <h2 class="sectionTitle">ACTIVE <span class="text-red">ROSTER</span></h2>
         <div class="featureGrid" id="landing-roster">
-            <div style="color:#555;">Accessing Mainframe...</div>
+            <div style="color:#555;">Connecting to Mainframe...</div>
         </div>
     </section>
 
     <section id="matches" class="container">
         <h2 class="sectionTitle">MISSION <span class="text-red">LOG</span></h2>
-        <div class="newsGrid" id="landing-matches"></div>
+        <div class="newsGrid" id="landing-matches">
+            <div style="color:#555;">Loading Operations...</div>
+        </div>
     </section>
 
     <footer>
