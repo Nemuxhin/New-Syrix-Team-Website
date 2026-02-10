@@ -14,25 +14,27 @@
 <body class="dashboard-root" id="page-hub">
 
     <div id="hubLocked" class="auth-screen">
-        <div class="card auth-box">
+        <div class="auth-card">
             <h2>SYRIX PROTOCOL</h2>
-            <p id="auth-msg" style="margin-bottom:20px; color:#888;">RESTRICTED AREA</p>
-            <button class="btn primary full-width" onclick="window.loginDiscord()">LOGIN WITH DISCORD</button>
-            <button class="btn ghost full-width" onclick="window.location.href='index.html'" style="margin-top:10px;">EXIT</button>
+            <p id="auth-msg" style="margin-bottom:20px; color:#666;">RESTRICTED ACCESS</p>
+            <div id="login-btns">
+                <button class="btn primary" onclick="window.loginDiscord()">LOGIN WITH DISCORD</button>
+                <button class="btn ghost" onclick="window.location.href='index.html'" style="margin-top:10px;">EXIT</button>
+            </div>
 
             <div id="app-form" style="display:none; text-align:left; margin-top:20px; border-top:1px solid #333; padding-top:20px;">
                 <h3 class="tag">ENLISTMENT</h3>
                 <input id="app-ign" class="dash-input" placeholder="Riot ID (Name#TAG)">
-                <input id="app-tracker" class="dash-input" placeholder="Tracker.gg Link">
+                <input id="app-tracker" class="dash-input" placeholder="Tracker.gg URL">
                 <select id="app-rank" class="dash-input"><option>Ascendant</option><option>Immortal</option><option>Radiant</option></select>
                 <select id="app-role" class="dash-input"><option>Duelist</option><option>Initiator</option><option>Controller</option><option>Sentinel</option><option>Flex</option></select>
                 <textarea id="app-why" class="dash-input" placeholder="Why join?" rows="2"></textarea>
-                <button class="btn primary full-width" onclick="window.submitApp()">SUBMIT APPLICATION</button>
+                <button class="btn primary full-width" onclick="window.submitApp()">SUBMIT DOSSIER</button>
             </div>
         </div>
     </div>
 
-    <div id="hubUnlocked" style="display:none; height:100%;">
+    <div id="hubUnlocked" style="display:none; height:100%; flex-direction:column;">
         <header class="hub-header">
             <div class="header-top">
                 <div class="logo">SYRIX <span style="color:var(--red)">HUB</span></div>
@@ -44,11 +46,12 @@
             <div class="header-bottom">
                 <nav class="scroll-nav">
                     <button class="nav-pill active" onclick="window.setTab('dashboard', this)">DASHBOARD</button>
+                    <button class="nav-pill" onclick="window.setTab('comps', this)">COMPS</button>
                     <button class="nav-pill" onclick="window.setTab('matches', this)">MATCHES</button>
                     <button class="nav-pill" onclick="window.setTab('warroom', this)">WAR ROOM</button>
                     <button class="nav-pill" onclick="window.setTab('stratbook', this)">STRATBOOK</button>
                     <button class="nav-pill" onclick="window.setTab('lineups', this)">LINEUPS</button>
-                    <button class="nav-pill" onclick="window.setTab('roster', this)">ROSTER MGR</button>
+                    <button class="nav-pill" onclick="window.setTab('roster', this)">ROSTER</button>
                     <button class="nav-pill" onclick="window.setTab('mapveto', this)">MAP VETO</button>
                     <button class="nav-pill admin-only" style="display:none; border-color:var(--red);" onclick="window.setTab('admin', this)">ADMIN</button>
                 </nav>
@@ -60,9 +63,9 @@
             <div id="dashboard" class="tabView active">
                 <div class="dashboard-grid">
                     <div class="dash-col-left">
-                        <div class="card">
-                            <h3 class="tag">CAPTAIN'S MESSAGE <button onclick="window.editMsg()" style="float:right; background:none; border:none; color:#555; cursor:pointer;">Edit</button></h3>
-                            <p id="capt-msg" style="font-style:italic; font-size:1.1rem;">Loading...</p>
+                        <div class="card message-card">
+                            <h3 class="tag">CAPTAIN'S MESSAGE <button onclick="window.editMsg()" class="btn-xs" style="float:right;">Edit</button></h3>
+                            <p id="capt-msg" class="message-body">Loading...</p>
                             <div id="capt-edit" style="display:none; margin-top:10px;">
                                 <textarea id="capt-input" class="dash-input"></textarea>
                                 <button class="btn primary full-width" onclick="window.saveMsg()">SAVE</button>
@@ -82,50 +85,57 @@
 
                     <div class="dash-col-right">
                         <div class="card" style="height:100%;">
-                            <h3 class="tag">UPCOMING EVENTS</h3>
-                            <div id="dash-events" style="display:flex; flex-direction:column; gap:10px;">Loading...</div>
+                            <h3 class="tag">UPCOMING EVENTS <span class="badge" id="ops-badge">0 ACTIVE</span></h3>
+                            <div id="dash-events" class="list-container">Loading...</div>
                         </div>
                     </div>
 
                     <div class="dash-col-stats">
                         <div class="card">
                             <h3 class="tag">WIN RATE</h3>
-                            <div id="stat-win" style="font-size:3rem; font-weight:900;">--%</div>
+                            <div id="stat-win" class="big-stat">--%</div>
                         </div>
                         <div class="card">
                             <h3 class="tag">ACTIVE OPS</h3>
-                            <div id="stat-ops" style="font-size:3rem; font-weight:900;">0</div>
+                            <div id="stat-ops" class="big-stat">0</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="stratbook" class="tabView">
-                <div class="strat-container">
-                    <div class="canvas-wrap">
-                        <canvas id="vpCanvas"></canvas>
-                        <img id="vpMapImg" src="">
-                        <div style="position:absolute; top:10px; left:10px; z-index:20; background:#111; padding:5px; border-radius:4px; display:flex; gap:5px;">
-                            <button onclick="window.tool='draw'" class="btn ghost" style="padding:5px 10px;">✏️</button>
-                            <button onclick="window.tool='agent'" class="btn ghost" style="padding:5px 10px;">👤</button>
-                            <input type="color" id="vpColor" value="#ff1e3c" style="height:30px; border:none;">
-                            <button onclick="window.saveStrat()" class="btn primary" style="padding:5px 10px;">💾</button>
-                            <button onclick="window.clearStrat()" class="btn ghost" style="padding:5px 10px; color:red;">🗑</button>
+            <div id="comps" class="tabView">
+                <div class="split-view">
+                    <div class="card">
+                        <h3 class="tag">AGENT SELECTOR</h3>
+                        <select id="comp-map" class="dash-input" onchange="window.loadComp()">
+                            <option>Ascent</option>
+                            <option>Bind</option>
+                            <option>Haven</option>
+                            <option>Lotus</option>
+                            <option>Pearl</option>
+                            <option>Split</option>
+                            <option>Sunset</option>
+                            <option>Abyss</option>
+                        </select>
+                        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:15px;">
+                            <div id="comp-slot-0" class="agent-slot" onclick="window.editCompSlot(0)">?</div>
+                            <div id="comp-slot-1" class="agent-slot" onclick="window.editCompSlot(1)">?</div>
+                            <div id="comp-slot-2" class="agent-slot" onclick="window.editCompSlot(2)">?</div>
+                            <div id="comp-slot-3" class="agent-slot" onclick="window.editCompSlot(3)">?</div>
+                            <div id="comp-slot-4" class="agent-slot" onclick="window.editCompSlot(4)">?</div>
+                        </div>
+                        <button class="btn primary full-width" onclick="window.saveComp()">SAVE LOADOUT</button>
+
+                        <div id="comp-picker" style="display:none; margin-top:20px; border-top:1px solid #333; padding-top:10px;">
+                            <h3 class="tag">SELECT AGENT</h3>
+                            <div id="comp-agent-list" style="display:grid; grid-template-columns:repeat(5,1fr); gap:5px;"></div>
                         </div>
                     </div>
                     <div class="card">
-                        <label class="tag">MAP SELECT</label>
-                        <select id="vpMapSelect" class="dash-input" onchange="window.changeMap()">
-                            <option value="ascent">ASCENT</option>
-                            <option value="bind">BIND</option>
-                            <option value="haven">HAVEN</option>
-                            <option value="lotus">LOTUS</option>
-                            <option value="split">SPLIT</option>
-                            <option value="sunset">SUNSET</option>
-                            <option value="abyss">ABYSS</option>
-                        </select>
-                        <label class="tag" style="margin-top:20px;">AGENTS</label>
-                        <div id="agent-palette" style="display:grid; grid-template-columns:repeat(4,1fr); gap:5px;"></div>
+                        <h3 class="tag">CURRENT META</h3>
+                        <div id="comp-display" style="display:flex; justify-content:space-around; align-items:center; height:100%;">
+                            <div style="color:#555;">Select Map to View</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -133,8 +143,8 @@
             <div id="matches" class="tabView">
                 <div class="split-view">
                     <div class="card">
-                        <h3 class="tag">LOG MATCH / SCRIM</h3>
-                        <input id="m-opp" class="dash-input" placeholder="Opponent">
+                        <h3 class="tag">LOG MATCH</h3>
+                        <input id="m-opp" class="dash-input" placeholder="Opponent Name">
                         <div style="display:flex; gap:10px;">
                             <input type="number" id="m-us" class="dash-input" placeholder="Us">
                             <input type="number" id="m-them" class="dash-input" placeholder="Them">
@@ -154,7 +164,7 @@
                     </div>
                     <div class="card">
                         <h3 class="tag">HISTORY</h3>
-                        <div id="match-list" style="overflow-y:auto; max-height:600px;"></div>
+                        <div id="match-list" class="list-container"></div>
                     </div>
                 </div>
             </div>
@@ -169,29 +179,85 @@
                     <div class="card">
                         <h3 class="tag" id="wr-title">SELECT TARGET</h3>
                         <div id="wr-content" style="display:none;">
-                            <label class="tag">INTEL / NOTES</label>
                             <textarea id="wr-notes" class="dash-input" style="height:300px;"></textarea>
                             <button class="btn primary" onclick="window.saveIntel()">UPDATE INTEL</button>
-                            <button class="btn ghost" onclick="window.deleteEnemy()" style="color:red; border-color:red;">DELETE</button>
+                            <button class="btn ghost" onclick="window.deleteEnemy()" style="color:red; border-color:red; margin-top:10px;">DELETE</button>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <div id="stratbook" class="tabView">
+                <div class="strat-container">
+                    <div class="canvas-wrap">
+                        <canvas id="vpCanvas"></canvas>
+                        <img id="vpMapImg" src="">
+                        <div style="position:absolute; top:10px; left:10px; z-index:20; background:#111; padding:5px; border-radius:4px; display:flex; gap:5px;">
+                            <button onclick="window.tool='draw'" class="btn-xs">✏️</button>
+                            <button onclick="window.tool='agent'" class="btn-xs">👤</button>
+                            <input type="color" id="vpColor" value="#ff1e3c" style="height:25px; border:none; background:none;">
+                            <button onclick="window.clearStrat()" class="btn-xs" style="color:red;">🗑</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <label class="tag">MAP SELECT</label>
+                        <select id="vpMapSelect" class="dash-input" onchange="window.changeMap()">
+                            <option value="ascent">ASCENT</option>
+                            <option value="bind">BIND</option>
+                            <option value="haven">HAVEN</option>
+                            <option value="lotus">LOTUS</option>
+                            <option value="split">SPLIT</option>
+                            <option value="sunset">SUNSET</option>
+                            <option value="abyss">ABYSS</option>
+                        </select>
+                        <label class="tag" style="margin-top:20px;">AGENTS</label>
+                        <div id="agent-palette" style="display:grid; grid-template-columns:repeat(4,1fr); gap:5px;"></div>
+                    </div>
+                </div>
+            </div>
+
             <div id="lineups" class="tabView">
-                <div class="card">
-                    <h3 class="tag">LINEUP LIBRARY</h3>
-                    <div class="grid-gallery" id="lineup-grid">
-                        <div class="gallery-card" onclick="window.addLineup()" style="display:flex; align-items:center; justify-content:center; border:2px dashed #333;">+ ADD NEW</div>
+                <div class="strat-container">
+                    <div class="canvas-wrap" style="cursor:crosshair;" id="lineup-map-container" onclick="window.mapClickLineup(event)">
+                        <img id="luMapImg" src="" style="width:100%; height:100%; object-fit:contain;">
+                        <div id="lineup-pins"></div>
+                    </div>
+                    <div class="card">
+                        <label class="tag">MAP</label>
+                        <select id="luMapSelect" class="dash-input" onchange="window.changeLineupMap()">
+                            <option value="ascent">ASCENT</option>
+                            <option value="bind">BIND</option>
+                            <option value="haven">HAVEN</option>
+                            <option value="lotus">LOTUS</option>
+                            <option value="split">SPLIT</option>
+                            <option value="sunset">SUNSET</option>
+                            <option value="abyss">ABYSS</option>
+                        </select>
+
+                        <div id="lineup-form" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
+                            <label class="tag">NEW PIN DETAILS</label>
+                            <input id="lu-title" class="dash-input" placeholder="Title (e.g. Sova A Main)">
+                            <input id="lu-url" class="dash-input" placeholder="Image/Video URL">
+                            <textarea id="lu-desc" class="dash-input" placeholder="Description"></textarea>
+                            <button class="btn primary full-width" onclick="window.saveLineup()">SAVE PIN</button>
+                            <button class="btn ghost full-width" onclick="document.getElementById('lineup-form').style.display='none'" style="margin-top:5px;">CANCEL</button>
+                        </div>
+
+                        <div id="lineup-viewer" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
+                            <h3 id="view-lu-title" style="color:white;"></h3>
+                            <a id="view-lu-link" href="#" target="_blank" style="color:var(--red); font-size:0.8rem;">OPEN RESOURCE ↗</a>
+                            <p id="view-lu-desc" style="color:#888; font-size:0.8rem; margin-top:10px;"></p>
+                            <button class="btn ghost" onclick="window.deleteLineup()" style="color:red; width:100%; margin-top:10px;">DELETE PIN</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div id="roster" class="tabView">
-                <div class="split-view">
+                <div class="dashboard-grid">
                     <div class="card">
                         <h3 class="tag">MEMBERS</h3>
-                        <div id="roster-list-edit"></div>
+                        <div id="roster-list-edit" class="list-container"></div>
                     </div>
                     <div class="card">
                         <h3 class="tag">EDIT PROFILE</h3>
@@ -206,18 +272,20 @@
             </div>
 
             <div id="mapveto" class="tabView">
-                <div class="card">
+                <div class="card full-height">
                     <h3 class="tag">MAP VETO BOARD <button onclick="window.resetVeto()" style="float:right; font-size:0.7rem; background:none; border:none; color:white; cursor:pointer;">RESET</button></h3>
-                    <div id="veto-grid" class="grid-gallery"></div>
+                    <div id="veto-grid" class="veto-grid"></div>
                 </div>
             </div>
 
             <div id="admin" class="tabView">
                 <div class="card">
                     <h3 class="tag">PENDING APPLICATIONS</h3>
-                    <div id="admin-list"></div>
+                    <div id="admin-list" class="list-container"></div>
                 </div>
             </div>
+
+            <div id="playbook" class="tabView"><div class="card center-msg">PLAYBOOK MODULE OFFLINE</div></div>
 
         </main>
     </div>
