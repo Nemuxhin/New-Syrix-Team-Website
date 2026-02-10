@@ -3,295 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYRIX // COMMAND CENTER</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <title>SYRIX HUB</title>
+    <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
-<body class="dashboard-root" id="page-hub">
+<body id="page-hub">
 
-    <div id="system-loader" style="position:fixed; inset:0; background:#000; z-index:10000; display:flex; align-items:center; justify-content:center; color:#fff; font-family:monospace; font-size:1.5rem;">
-        SYSTEM INITIALIZING...
-    </div>
-
-    <div id="hubLocked" class="auth-screen" style="display:none;">
+    <div id="loader" class="auth-screen">Loading System...</div>
+    <div id="auth-screen" class="auth-screen" style="display:none;">
         <div class="auth-box">
-            <h2 style="font-size:2.5rem; font-weight:900;">SYRIX<span class="text-red">_NET</span></h2>
-            <p id="auth-status" style="margin-bottom:30px; color:#666; font-weight:bold; letter-spacing:2px;">SECURE CONNECTION REQUIRED</p>
-
-            <div id="login-module">
-                <button class="btn primary" onclick="window.loginDiscord()"><i class="fa-brands fa-discord"></i> AUTHENTICATE</button>
-                <button class="btn ghost" style="margin-top:10px;" onclick="window.location.href='index.html'">ABORT</button>
-            </div>
-
-            <div id="app-module" style="display:none; text-align:left; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
-                <h3 class="tag">ENLISTMENT DOSSIER</h3>
-                <input id="app-ign" class="dash-input" placeholder="Riot ID (Name#TAG)">
-                <div style="display:flex; gap:10px;">
-                    <select id="app-rank" class="dash-select">
-                        <option>Ascendant 1</option>
-                        <option>Ascendant 2</option>
-                        <option>Ascendant 3</option>
-                        <option>Immortal 1</option>
-                        <option>Immortal 2</option>
-                        <option>Immortal 3</option>
-                        <option>Radiant</option>
-                    </select>
-                    <select id="app-role" class="dash-select">
-                        <option>Duelist</option>
-                        <option>Initiator</option>
-                        <option>Controller</option>
-                        <option>Sentinel</option>
-                        <option>Flex</option>
-                    </select>
-                </div>
-                <input id="app-tracker" class="dash-input" placeholder="Tracker.gg URL">
-                <textarea id="app-why" class="dash-textarea" rows="3" placeholder="Why do you want to join?"></textarea>
-                <button class="btn primary" onclick="window.submitApp()">TRANSMIT APPLICATION</button>
-            </div>
+            <h1>SYRIX<span style="color:#fff">NET</span></h1>
+            <p style="color:#666; margin-bottom:20px;">RESTRICTED ACCESS</p>
+            <button class="btn" onclick="app.login()">LOGIN WITH DISCORD</button>
         </div>
     </div>
 
-    <div id="hubUnlocked" style="display:none; height:100%; flex-direction:column;">
-
+    <div id="app-ui" style="display:none; height:100%; flex-direction:column;">
         <header class="hub-header">
-            <div class="header-top">
-                <div style="display:flex; gap:15px; align-items:center;">
-                    <div class="logo">SYRIX <span class="text-red">HUB</span></div>
-                    <div style="font-size:0.7rem; color:#0f0; font-weight:bold;"><span style="display:inline-block; width:6px; height:6px; background:#0f0; border-radius:50%; margin-right:5px;"></span>ONLINE</div>
-                </div>
-                <div style="display:flex; gap:20px; align-items:center;">
-                    <div style="text-align:right;">
-                        <span id="user-role" class="text-red" style="font-size:0.6rem; font-weight:900; display:block;">OPERATOR</span>
-                        <span id="user-name" style="font-weight:bold; font-size:0.9rem;">UNKNOWN</span>
-                    </div>
-                    <button class="btn-xs" onclick="firebase.auth().signOut()"><i class="fa-solid fa-power-off"></i></button>
-                </div>
-            </div>
-            <div class="header-bottom">
-                <nav class="scroll-nav">
-                    <button class="nav-pill active" onclick="window.setTab('dashboard', this)">DASHBOARD</button>
-                    <button class="nav-pill" onclick="window.setTab('matches', this)">OPS</button>
-                    <button class="nav-pill" onclick="window.setTab('stratbook', this)">STRATBOOK</button>
-                    <button class="nav-pill" onclick="window.setTab('comps', this)">COMPS</button>
-                    <button class="nav-pill" onclick="window.setTab('warroom', this)">WAR ROOM</button>
-                    <button class="nav-pill" onclick="window.setTab('lineups', this)">LINEUPS</button>
-                    <button class="nav-pill" onclick="window.setTab('roster', this)">ROSTER</button>
-                    <button class="nav-pill" onclick="window.setTab('mapveto', this)">VETO</button>
-                    <button class="nav-pill" onclick="window.setTab('playbook', this)">PLAYBOOK</button>
-                    <button class="nav-pill admin-only" onclick="window.setTab('partners', this)" style="display:none; border-color:var(--red);">PARTNERS</button>
-                    <button class="nav-pill admin-only" onclick="window.setTab('content', this)" style="display:none; border-color:var(--red);">CONTENT</button>
-                    <button class="nav-pill admin-only" onclick="window.setTab('admin', this)" style="display:none; border-color:var(--red);">ADMIN</button>
-                </nav>
+            <div class="logo">SYRIX <span style="color:var(--red)">HUB</span></div>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <span id="user-name" style="font-weight:bold; color:#666;">AGENT</span>
+                <button class="btn" style="width:auto; padding:5px 15px; font-size:0.7rem;" onclick="firebase.auth().signOut()">LOGOUT</button>
             </div>
         </header>
 
-        <main class="dash-content">
+        <nav class="nav-scroll">
+            <button class="nav-btn active" onclick="app.nav('dashboard', this)">DASHBOARD</button>
+            <button class="nav-btn" onclick="app.nav('matches', this)">OPS</button>
+            <button class="nav-btn" onclick="app.nav('stratbook', this)">STRATBOOK</button>
+            <button class="nav-btn" onclick="app.nav('warroom', this)">WAR ROOM</button>
+            <button class="nav-btn" onclick="app.nav('roster', this)">ROSTER</button>
+            <button class="nav-btn" onclick="app.nav('veto', this)">VETO</button>
+        </nav>
 
-            <div id="dashboard" class="tabView active">
-                <div class="dashboard-grid">
+        <main class="dash-content">
+            <div id="dashboard" class="view-section active">
+                <div class="grid">
                     <div class="col-left">
-                        <div class="card message-card">
-                            <div class="card-head"><h3 class="tag">CAPTAIN'S MESSAGE</h3><button class="btn-xs" onclick="window.editMsg()">EDIT</button></div>
-                            <p id="capt-msg" class="message-body">Loading transmission...</p>
-                            <div id="capt-edit" style="display:none; margin-top:10px;">
-                                <textarea id="capt-input" class="dash-textarea" rows="4"></textarea>
-                                <button class="btn primary" onclick="window.saveMsg()" style="margin-top:5px;">UPDATE TRANSMISSION</button>
-                            </div>
+                        <div class="card">
+                            <h3 class="tag">CAPTAIN'S MESSAGE</h3>
+                            <p id="capt-msg" style="font-style:italic; color:#ddd;">Loading...</p>
+                            <button class="btn-ghost" style="margin-top:10px; font-size:0.7rem;" onclick="app.editMsg()">EDIT</button>
                         </div>
                         <div class="card">
-                            <h3 class="tag">AVAILABILITY HEATMAP</h3>
-                            <div id="avail-heatmap" style="display:flex; flex-direction:column; gap:2px; margin-bottom:15px;"></div>
-                            <div style="border-top:1px solid #333; padding-top:10px;">
-                                <h3 class="tag">ADD AVAILABILITY</h3>
-                                <div style="display:flex; gap:5px;">
-                                    <select id="av-day" class="dash-select"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select>
-                                    <input type="time" id="av-start" class="dash-input" value="18:00">
-                                    <input type="time" id="av-end" class="dash-input" value="22:00">
-                                </div>
-                                <button class="btn ghost" onclick="window.saveAvail()">ADD SLOT</button>
-                            </div>
+                            <h3 class="tag">HEATMAP</h3>
+                            <div id="heatmap" style="display:flex; flex-direction:column; gap:2px; height:150px; overflow:hidden;"></div>
                         </div>
                     </div>
-                    <div class="col-mid">
-                        <div class="card full-height">
-                            <div class="card-head"><h3 class="tag">UPCOMING OPERATIONS</h3><span class="badge" id="ops-badge">0 ACTIVE</span></div>
-                            <div id="dash-events" class="list-container">Loading...</div>
-                        </div>
-                    </div>
-                    <div class="col-right">
-                        <div class="card" style="text-align:center;"><h3 class="tag">WIN RATE</h3><div id="stat-win" class="big-num">--%</div></div>
-                        <div class="card"><h3 class="tag">ABSENCE LOGGER</h3><div style="display:flex; gap:5px;"><input type="date" id="abs-start" class="dash-input"><input type="date" id="abs-end" class="dash-input"></div><input id="abs-reason" class="dash-input" placeholder="Reason"><button class="btn ghost" onclick="window.logAbsence()">LOG ABSENCE</button><div id="abs-list" class="list-container small-list" style="margin-top:15px;"></div></div>
+                    <div class="card full">
+                        <h3 class="tag">UPCOMING OPS</h3>
+                        <div id="dash-events"></div>
                     </div>
                 </div>
             </div>
 
-            <div id="stratbook" class="tabView">
-                <div class="strat-container">
-                    <div class="canvas-wrap">
-                        <canvas id="vpCanvas"></canvas><img id="vpMapImg" src="">
-                        <div class="canvas-tools">
-                            <button class="tool-icon active" onclick="window.tool='draw'">✏️</button>
-                            <button class="tool-icon" onclick="window.tool='agent'">👤</button>
-                            <input type="color" id="vpColor" value="#ff1e3c" style="width:30px; border:none; background:none;">
-                            <button class="tool-icon" onclick="window.saveStrat()">💾</button>
-                            <button class="tool-icon" style="color:red;" onclick="window.clearStrat()">🗑</button>
-                        </div>
+            <div id="matches" class="view-section">
+                <div class="grid">
+                    <div class="card">
+                        <h3 class="tag">LOG MATCH</h3>
+                        <input id="m-opp" class="input" placeholder="Opponent">
+                        <input type="date" id="m-date" class="input">
+                        <button class="btn" onclick="app.addMatch()">ADD</button>
                     </div>
                     <div class="card">
-                        <label class="tag">THEATER SELECTION</label>
-                        <select id="vpMapSelect" class="dash-select" onchange="window.changeMap()"><option value="ascent">ASCENT</option><option value="bind">BIND</option><option value="haven">HAVEN</option><option value="lotus">LOTUS</option><option value="pearl">PEARL</option><option value="split">SPLIT</option><option value="sunset">SUNSET</option><option value="abyss">ABYSS</option></select>
-                        <label class="tag" style="margin-top:20px;">ASSET LIBRARY</label>
-                        <div id="agent-palette" class="agent-grid"></div>
+                        <h3 class="tag">HISTORY</h3>
+                        <div id="match-list"></div>
                     </div>
                 </div>
             </div>
 
-            <div id="comps" class="tabView">
-                <div class="split-panel">
+            <div id="stratbook" class="view-section">
+                <div class="strat-wrap">
+                    <div class="canvas-area"><canvas id="vpCanvas"></canvas></div>
                     <div class="card">
-                        <h3 class="tag">AGENT SELECTOR</h3>
-                        <select id="comp-map" class="dash-select" onchange="window.loadComp()"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
-                        <div class="comp-grid">
-                            <div id="cs-0" class="comp-slot" onclick="window.editComp(0)">?</div>
-                            <div id="cs-1" class="comp-slot" onclick="window.editComp(1)">?</div>
-                            <div id="cs-2" class="comp-slot" onclick="window.editComp(2)">?</div>
-                            <div id="cs-3" class="comp-slot" onclick="window.editComp(3)">?</div>
-                            <div id="cs-4" class="comp-slot" onclick="window.editComp(4)">?</div>
-                        </div>
-                        <button class="btn primary" onclick="window.saveComp()">SAVE CONFIGURATION</button>
-                        <div id="comp-picker" style="display:none; margin-top:20px; border-top:1px solid #333; padding-top:10px;">
-                            <h3 class="tag">SELECT AGENT</h3>
-                            <div id="comp-agent-list" class="agent-grid"></div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="tag">ACTIVE CONFIGURATION</h3>
-                        <div id="comp-display" style="display:flex; justify-content:center; gap:15px; margin-top:50px;"></div>
+                        <h3 class="tag">TOOLS</h3>
+                        <button class="btn-ghost" onclick="app.tool='draw'">PEN</button>
+                        <button class="btn-ghost" onclick="app.tool='agent'" style="margin-top:5px;">AGENT</button>
+                        <button class="btn" onclick="app.saveStrat()" style="margin-top:20px;">SAVE</button>
                     </div>
                 </div>
             </div>
 
-            <div id="matches" class="tabView">
-                <div class="split-panel">
+            <div id="warroom" class="view-section">
+                <div class="grid">
                     <div class="card">
-                        <h3 class="tag">LOG OPERATION</h3>
-                        <input id="m-opp" class="dash-input" placeholder="Opponent Name">
-                        <div style="display:flex; gap:10px;"><input type="number" id="m-us" class="dash-input" placeholder="Us"><input type="number" id="m-them" class="dash-input" placeholder="Them"></div>
-                        <input type="date" id="m-date" class="dash-input">
-                        <select id="m-map" class="dash-select"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
-                        <button class="btn primary" onclick="window.addMatch()">LOG RECORD</button>
-                    </div>
-                    <div class="card"><h3 class="tag">MISSION HISTORY</h3><div id="match-list" class="list-container"></div></div>
-                </div>
-            </div>
-
-            <div id="warroom" class="tabView">
-                <div class="split-panel">
-                    <div class="card">
-                        <h3 class="tag">TARGET LIST</h3>
-                        <button class="btn ghost" onclick="window.newEnemy()">+ NEW TARGET</button>
-                        <div id="enemy-list" class="list-container" style="margin-top:15px;"></div>
+                        <h3 class="tag">ENEMIES</h3>
+                        <button class="btn-ghost" onclick="app.addEnemy()">+ NEW</button>
+                        <div id="enemy-list" style="margin-top:10px;"></div>
                     </div>
                     <div class="card">
-                        <h3 class="tag" id="wr-title">SELECT TARGET</h3>
-                        <div id="wr-content" style="display:none; height:100%; flex-direction:column;">
-                            <textarea id="wr-notes" class="dash-textarea" style="flex:1;" placeholder="Enter tactical notes..."></textarea>
-                            <div style="display:flex; gap:10px; margin-top:10px;">
-                                <button class="btn primary" onclick="window.saveIntel()">UPDATE INTEL</button>
-                                <button class="btn danger" onclick="window.deleteEnemy()">DELETE TARGET</button>
-                            </div>
-                        </div>
+                        <h3 class="tag" id="wr-name">SELECT TARGET</h3>
+                        <textarea id="wr-notes" class="textarea" style="height:300px;"></textarea>
+                        <button class="btn" onclick="app.saveIntel()">SAVE INTEL</button>
                     </div>
                 </div>
             </div>
 
-            <div id="lineups" class="tabView">
-                <div class="strat-container">
-                    <div class="canvas-wrap" id="lu-map-wrap" onclick="window.mapClickLineup(event)">
-                        <img id="luMapImg" src="" style="width:100%; height:100%; object-fit:contain;">
-                        <div id="lineup-pins"></div>
-                    </div>
-                    <div class="card">
-                        <label class="tag">MAP</label>
-                        <select id="luMapSelect" class="dash-select" onchange="window.changeLineupMap()"><option value="ascent">ASCENT</option><option value="bind">BIND</option><option value="haven">HAVEN</option><option value="lotus">LOTUS</option><option value="split">SPLIT</option><option value="sunset">SUNSET</option><option value="abyss">ABYSS</option></select>
-                        <div id="lineup-form" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
-                            <label class="tag">NEW PIN DATA</label>
-                            <input id="lu-title" class="dash-input" placeholder="Title">
-                            <input id="lu-url" class="dash-input" placeholder="Image/Video URL">
-                            <textarea id="lu-desc" class="dash-input" placeholder="Description"></textarea>
-                            <button class="btn primary" onclick="window.saveLineup()">SAVE PIN</button>
-                        </div>
-                        <div id="lineup-viewer" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
-                            <h3 id="view-lu-title" style="color:white; margin-bottom:5px;"></h3>
-                            <a id="view-lu-link" href="#" target="_blank" style="color:var(--red); font-size:0.8rem; font-weight:bold;">OPEN RESOURCE</a>
-                            <p id="view-lu-desc" style="color:#888; font-size:0.9rem; margin-top:10px;"></p>
-                            <button class="btn ghost" onclick="window.deleteLineup()" style="color:red; margin-top:15px;">DELETE PIN</button>
-                        </div>
-                    </div>
+            <div id="veto" class="view-section">
+                <div class="card full">
+                    <h3 class="tag">MAP VETO <button style="float:right;" onclick="app.resetVeto()">RESET</button></h3>
+                    <div id="veto-grid" class="veto-grid"></div>
                 </div>
             </div>
 
-            <div id="playbook" class="tabView">
-                <div class="card full-height">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <h3 class="tag">TACTICAL PLAYBOOK</h3>
-                        <div style="display:flex; gap:10px;">
-                            <select id="pb-map" class="dash-select" onchange="window.loadPlaybook()"><option>Ascent</option><option>Bind</option><option>Haven</option><option>Lotus</option><option>Pearl</option><option>Split</option><option>Sunset</option><option>Abyss</option></select>
-                            <select id="pb-side" class="dash-select" onchange="window.loadPlaybook()"><option>Attack</option><option>Defense</option></select>
-                        </div>
-                    </div>
-                    <textarea id="pb-text" class="dash-textarea" style="flex:1; font-family:monospace; line-height:1.6;" placeholder="Define protocols, defaults, and execute strategies here..."></textarea>
-                    <button class="btn primary" onclick="window.savePlaybook()" style="margin-top:10px;">SAVE PROTOCOLS</button>
-                </div>
-            </div>
-
-            <div id="roster" class="tabView">
-                <div class="dashboard-grid">
-                    <div class="card col-left"><h3 class="tag">ACTIVE ROSTER</h3><div id="roster-list-mgr" class="list-container"></div></div>
-                    <div class="card col-mid">
-                        <h3 class="tag">EDIT PROFILE</h3>
-                        <div id="roster-editor" style="display:none;">
-                            <input id="r-id" class="dash-input" disabled>
-                            <select id="r-role" class="dash-select"><option>Captain</option><option>Main</option><option>Sub</option><option>Coach</option></select>
-                            <input id="r-pfp" class="dash-input" placeholder="PFP URL">
-                            <button class="btn primary" onclick="window.saveProfile()">SAVE CHANGES</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="mapveto" class="tabView">
-                <div class="card full-height">
-                    <h3 class="tag">MAP VETO BOARD <button class="btn-xs" style="float:right;" onclick="window.resetVeto()">RESET</button></h3>
-                    <div id="veto-grid" class="veto-container"></div>
-                </div>
-            </div>
-
-            <div id="partners" class="tabView">
-                <div class="split-panel">
-                    <div class="card"><h3 class="tag">ADD PARTNER</h3><input id="pt-name" class="dash-input" placeholder="Name"><input id="pt-contact" class="dash-input" placeholder="Contact Info"><button class="btn primary" onclick="window.addPartner()">ADD ENTRY</button></div>
-                    <div class="card"><h3 class="tag">DIRECTORY</h3><div id="partner-list" class="list-container"></div></div>
-                </div>
-            </div>
-
-            <div id="content" class="tabView">
-                <div class="dashboard-grid">
-                    <div class="card"><h3 class="tag">POST NEWS</h3><input id="news-title" class="dash-input" placeholder="Title"><textarea id="news-body" class="dash-input"></textarea><button class="btn primary" onclick="window.addNews()">POST</button></div>
-                    <div class="card"><h3 class="tag">ADD INTEL</h3><input id="intel-title" class="dash-input" placeholder="Title"><input id="intel-url" class="dash-input" placeholder="URL"><button class="btn primary" onclick="window.addIntel()">ADD</button></div>
-                </div>
-            </div>
-
-            <div id="admin" class="tabView">
-                <div class="card"><h3 class="tag">PENDING APPLICATIONS</h3><div id="admin-list" class="list-container"></div></div>
+            <div id="roster" class="view-section">
+                <div class="card"><h3 class="tag">ACTIVE ROSTER</h3><div id="roster-list"></div></div>
             </div>
 
         </main>
     </div>
-
     <script src="assets/js/script.js"></script>
 </body>
 </html>
