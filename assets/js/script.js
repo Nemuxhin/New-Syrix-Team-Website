@@ -1,6 +1,6 @@
 // --- 1. CONFIGURATION ---
 const firebaseConfig = {
-    apiKey: "AIzaSyAcZy0oY6fmwJ4Lg9Ac-Bq__eMukMC_u0w",
+    apiKey: "AIzaSyAcZy0oY6fmwJ4Lg9Ac-Bq__eMukMC_u0w", // Warning: Secure this in production!
     authDomain: "syrix-team-schedule.firebaseapp.com",
     projectId: "syrix-team-schedule",
     storageBucket: "syrix-team-schedule.firebasestorage.app",
@@ -14,7 +14,41 @@ let activeAgent = null;
 
 // --- 2. INITIALIZATION ENGINE ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Reveal Visuals (Landing Page)
+
+    // Initialize Firebase
+    if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        console.log("Firebase System: ONLINE");
+    } else {
+        console.error("Firebase SDK missing.");
+    }
+
+    // Identify Current Page
+    const pageId = document.body.id;
+
+    // --- HOME PAGE LOGIC ---
+    if (pageId === 'page-home') {
+        initScrollReveal();
+        if (db) loadLandingStats();
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+        });
+    }
+
+    // --- HUB PAGE LOGIC ---
+    if (pageId === 'page-hub') {
+        if (auth) initHubAuth();
+    }
+});
+
+// --- 3. HOME PAGE FUNCTIONS ---
+function initScrollReveal() {
     const runReveal = () => {
         document.querySelectorAll('.reveal').forEach(el => {
             const rect = el.getBoundingClientRect();
@@ -22,42 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     window.addEventListener('scroll', runReveal);
-    setTimeout(runReveal, 150);
+    runReveal(); // Run once on load
+}
 
-    // Initialize Firebase v8
-    if (typeof firebase !== 'undefined') {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        auth = firebase.auth();
-
-        // Auth State Listener
-        auth.onAuthStateChanged(user => {
-            const lock = document.getElementById('hubLocked');
-            const unlocked = document.getElementById('hubUnlocked');
-
-            if (user) {
-                if (lock) lock.style.display = 'none';
-                if (unlocked) unlocked.style.display = 'block';
-
-                const profile = document.getElementById('userProfile');
-                if (profile) profile.innerText = user.displayName ? user.displayName.toUpperCase() : "OPERATOR";
-
-                initPlanner();
-                syncHubData();
-            } else {
-                if (lock) lock.style.display = 'flex';
-                if (unlocked) unlocked.style.display = 'none';
-            }
-        });
-
-        // Load Landing Page Data
-        if (document.getElementById('stat-record')) loadLandingStats();
-    }
-});
-
-// --- 3. LANDING PAGE LOGIC ---
 function loadLandingStats() {
-    // Record & Winrate
+    // Fake data logic if DB is empty, or use real listener
     db.collection("events").onSnapshot(snap => {
         let w = 0, l = 0;
         snap.forEach(doc => {
@@ -66,102 +69,112 @@ function loadLandingStats() {
                 (parseInt(r.myScore) > parseInt(r.enemyScore)) ? w++ : l++;
             }
         });
-        const rec = document.getElementById('stat-record');
-        const wr = document.getElementById('stat-winrate');
-        if (rec) rec.innerText = `${w}W - ${l}L`;
-        if (wr) wr.innerText = `${Math.round((w / (w + l || 1)) * 100)}%`;
-    });
+
+        // Safe Element Updates
+        safeText('stat-record', `${w}W - ${l}L`);
+        safeText('stat-winrate', `${Math.round((w / (w + l || 1)) * 100)}%`);
+    }, err => console.log("Stats Offline (Auth Required?)"));
 
     // Roster Count
     db.collection("roster").onSnapshot(snap => {
-        const ros = document.getElementById('stat-roster');
-        if (ros) ros.innerText = snap.size;
-    });
+        safeText('stat-roster', snap.size);
+    }, () => { }); // Suppress errors for clean UI
+}
 
-    // News Feed
-    db.collection("news").orderBy("date", "desc").limit(3).onSnapshot(snap => {
-        const feed = document.getElementById('live-news');
-        if (!feed) return;
-        feed.innerHTML = "";
-        snap.forEach(doc => {
-            const n = doc.data();
-            feed.innerHTML += `
-                <div class="newsCard">
-                    <small style="color:var(--red); font-weight:800; letter-spacing:1px;">${n.date || 'SIGNAL_LOST'}</small>
-                    <h3 style="margin: 10px 0;">${n.title}</h3>
-                    <p style="font-size:0.85rem; color:var(--text-muted);">${n.body ? n.body.substring(0, 120) + '...' : ''}</p>
-                </div>`;
-        });
+// --- 4. HUB AUTH & NAVIGATION ---
+function initHubAuth() {
+    auth.onAuthStateChanged(user => {
+        const lock = document.getElementById('hubLocked');
+        const unlocked = document.getElementById('hubUnlocked');
+
+        if (user) {
+            if (lock) lock.style.display = 'none';
+            if (unlocked) unlocked.style.display = 'block';
+            safeText('userProfile', user.displayName ? user.displayName.toUpperCase() : "OPERATOR");
+
+            // Only init planner if we are actually allowed in
+            initPlanner();
+            syncHubData();
+        } else {
+            if (lock) lock.style.display = 'flex';
+            if (unlocked) unlocked.style.display = 'none';
+        }
     });
 }
 
-// --- 4. HUB INTERFACE LOGIC ---
 window.loginWithDiscord = () => {
     const provider = new firebase.auth.OAuthProvider('oidc.discord');
-    auth.signInWithPopup(provider).catch(e => {
-        console.error("Auth Error:", e);
-        alert("Authentication failed. Check Firebase Authorized Domains.");
-    });
+    auth.signInWithPopup(provider).catch(e => alert("Auth Failed: " + e.message));
 };
 
 window.showTab = (id, btn) => {
     document.querySelectorAll('.tabView').forEach(v => v.style.display = 'none');
     document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
 
-    const target = document.getElementById(id);
-    if (target) {
-        target.style.display = 'block';
-        btn.classList.add('active');
-    }
+    document.getElementById(id).style.display = 'block';
+    btn.classList.add('active');
 };
 
 // --- 5. STRATBOOK (CANVAS ENGINE) ---
-let canvas, ctx, drawing = false;
+let canvas, ctx, isDrawing = false;
 
 function initPlanner() {
     canvas = document.getElementById('vpCanvas');
     if (!canvas) return;
+
     ctx = canvas.getContext('2d');
 
-    // Lock Internal Resolution for HD Drawing
-    canvas.width = 1920;
-    canvas.height = 1080;
+    // Set internal resolution to match container visual size 1:1 for accuracy
+    const wrapper = canvas.parentElement;
+    canvas.width = wrapper.clientWidth;
+    canvas.height = wrapper.clientHeight;
 
-    canvas.onmousedown = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    // Handle Resize
+    window.addEventListener('resize', () => {
+        canvas.width = wrapper.clientWidth;
+        canvas.height = wrapper.clientHeight;
+    });
 
-        if (currentTool === 'draw') {
-            drawing = true;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-        } else if (currentTool === 'agent' && activeAgent) {
-            stampAgent(x, y);
-        }
-    };
+    // Mouse Events
+    canvas.onmousedown = startDraw;
+    canvas.onmousemove = draw;
+    window.onmouseup = () => { isDrawing = false; };
 
-    canvas.onmousemove = (e) => {
-        if (!drawing || currentTool !== 'draw') return;
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-        ctx.lineTo(x, y);
-        ctx.strokeStyle = document.getElementById('vpColor').value;
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-    };
-
-    window.onmouseup = () => { drawing = false; };
     loadAgentPalette();
+}
+
+function startDraw(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (currentTool === 'draw') {
+        isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    } else if (currentTool === 'agent' && activeAgent) {
+        stampAgent(x, y);
+    }
+}
+
+function draw(e) {
+    if (!isDrawing || currentTool !== 'draw') return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = document.getElementById('vpColor').value;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.stroke();
 }
 
 window.setTool = (t) => {
     currentTool = t;
     document.querySelectorAll('.tool').forEach(el => el.classList.remove('active'));
-    document.getElementById(`tool-${t}`).classList.add('active');
+    const btn = document.getElementById(`tool-${t}`);
+    if (btn) btn.classList.add('active');
 };
 
 async function loadAgentPalette() {
@@ -175,7 +188,7 @@ async function loadAgentPalette() {
                     <img src="${a.displayIcon}" title="${a.displayName}">
                 </div>`).join('');
         }
-    } catch (e) { console.error("Agent API Failure"); }
+    } catch (e) { console.error("Agent API Failed"); }
 }
 
 window.prepAgent = (url) => {
@@ -188,11 +201,13 @@ function stampAgent(x, y) {
     img.crossOrigin = "anonymous";
     img.src = activeAgent;
     img.onload = () => {
-        ctx.drawImage(img, x - 50, y - 50, 100, 100);
+        const size = 40; // Icon size
+        ctx.drawImage(img, x - (size / 2), y - (size / 2), size, size);
+        // Add a ring around it
         ctx.strokeStyle = "#ff1e3c";
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(x, y, 52, 0, Math.PI * 2);
+        ctx.arc(x, y, (size / 2) + 2, 0, Math.PI * 2);
         ctx.stroke();
     };
 }
@@ -205,57 +220,61 @@ window.changeMap = () => {
         ascent: "7eaecc1b-4337-bbf6-6130-03a4d7090581",
         bind: "2c9d57bc-4f8a-4e22-8e6b-b784297d04a5",
         haven: "2bee0ca3-4471-9193-c139-3a1154054a16",
-        lotus: "2fe4ed3d-450f-aa44-0b05-a2e116a401f1"
+        lotus: "2fe4ed3d-450f-aa44-0b05-a2e116a401f1",
+        split: "d960549e-4a55-526b-577a-45a85c963155",
+        sunset: "92584fbe-486a-b1b2-9faa-39b0f486b498"
     };
-    const img = document.getElementById('vpMapImg');
-    if (img) img.src = `https://media.valorant-api.com/maps/${maps[val] || maps.ascent}/stylizedicon.png`;
+    document.getElementById('vpMapImg').src = `https://media.valorant-api.com/maps/${maps[val] || maps.ascent}/stylizedicon.png`;
     window.clearPlanner();
 };
 
 window.saveStrategy = () => {
+    // Create a temporary canvas to combine map + drawing
+    const tempCanvas = document.createElement('canvas');
+    const w = canvas.width;
+    const h = canvas.height;
+    tempCanvas.width = w;
+    tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+
+    // Draw Map Image first
+    const mapImg = document.getElementById('vpMapImg');
+    tCtx.drawImage(mapImg, 0, 0, w, h);
+    // Draw Drawing on top
+    tCtx.drawImage(canvas, 0, 0);
+
     const link = document.createElement('a');
-    link.download = `SYRIX_PLAN_${Date.now()}.png`;
-    link.href = canvas.toDataURL();
+    link.download = `SYRIX_STRAT_${Date.now()}.png`;
+    link.href = tempCanvas.toDataURL();
     link.click();
 };
 
-// --- 6. DATA SYNC ---
-function syncHubData() {
-    const rosList = document.getElementById('rosList');
-    if (rosList) {
-        db.collection("roster").onSnapshot(snap => {
-            rosList.innerHTML = "";
-            snap.forEach(doc => {
-                const p = doc.data();
-                rosList.innerHTML += `
-                    <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <img src="${p.pfp || ''}" style="width:40px; height:40px; border-radius:50%; border:1px solid var(--red);">
-                            <div>
-                                <div style="font-weight:900;">${doc.id}</div>
-                                <div style="font-size:0.6rem; color:var(--red); letter-spacing:1px;">${p.role} // ${p.rank}</div>
-                            </div>
-                        </div>
-                    </div>`;
-            });
-        });
-    }
+// --- 6. UTILS & MODALS ---
+function safeText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
 }
 
-// --- 7. TRAILER MODAL ---
+function syncHubData() {
+    // Only runs if elements exist
+    if (!document.getElementById('rosList')) return;
+
+    db.collection("roster").onSnapshot(snap => {
+        const list = document.getElementById('rosList');
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const p = doc.data();
+            list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #222;">${doc.id}</div>`;
+        });
+    });
+}
+
 window.openTrailer = () => {
-    const m = document.getElementById('modal');
-    const f = document.getElementById('trailerFrame');
-    if (m && f) {
-        m.classList.add('active');
-        f.src = "https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1";
-    }
+    document.getElementById('modal').classList.add('active');
+    document.getElementById('trailerFrame').src = "https://www.youtube.com/embed/y9zweO_hU1U?autoplay=1";
 };
+
 window.closeTrailer = () => {
-    const m = document.getElementById('modal');
-    const f = document.getElementById('trailerFrame');
-    if (m && f) {
-        m.classList.remove('active');
-        f.src = "";
-    }
+    document.getElementById('modal').classList.remove('active');
+    document.getElementById('trailerFrame').src = "";
 };
